@@ -1,11 +1,12 @@
-// one change is that we do not use files for reading the words anymore, for simplicity
-// the resources are defined in TypeScript modules
-// sometimes typescript fails to process these two modules, but they work fine in javascript
+// one change is that we do not use files for reading the words anymore, for simplicity
+// the resources are defined in TypeScript modules
+// sometimes typescript fails to process these two modules, but they work fine in javascript
 import { allwords } from './allwords';
 import { answers } from './answers';
 // the functionality needed from the previous application
 import {
   Letter,
+  Guess,
   LetterGuess,
   Wordle,
   rateGuesses,
@@ -14,12 +15,13 @@ import {
   isValidGuess,
   isValidPrefix,
   randomWord,
+  newWordle,
   status,
   stringToWord,
 } from './wordle';
 // we need the useState hook
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // some basic components
 import {
   Text,
@@ -65,10 +67,9 @@ const BoardLetter = ({ guess }: { guess: LetterGuess }) => {
   );
 };
 
-//TODO Sharing (1 pts)
 function appendGuess(guess: LetterGuess): string {
   let tmp = share;
-  let append: string;
+  let append = ' ';
   switch (guess.kind) {
     case 'correct': {
       append = '🟩';
@@ -116,10 +117,9 @@ const Board = ({
   // we "pad" the guess with spaces so that it's of length five
   // we produce LetterGuess data structures of type "untried" (gray) or "absent" (red)
   // depending on the validity of the guess
-  //TODO Haptics (1 pts)
   const filled: LetterGuess[] = [
     ...guess,
-    ...new Array(game.answer.length - guess.length).fill(' '),
+    ...new Array(game.answer.length - guess.length).fill(' '),
   ].map((char, idx) => ({
     letter: { character: char, index: idx },
     kind: valid ? 'untried' : 'absent',
@@ -373,6 +373,16 @@ const Settings = ({
     </View>
   );
 };
+
+function roundNumber(guesses: string): number {
+  for (let i = 0; i < guesses.length; i++) {
+    if (guesses[i] === undefined) {
+      return i - 1;
+    }
+  }
+  return -1;
+}
+
 // the wordle game screen with the high level logic
 const WordleGame = ({
   startGame,
@@ -407,7 +417,7 @@ const WordleGame = ({
     setGame({ ...game, guesses: [...game.guesses, guess] });
     setGuess('');
   };
-//TODO Dictionary API integration (mandatory, 2pt)
+
   const link: string =
     'https://api.dictionaryapi.dev/api/v2/entries/en/' +
     game.answer.toLowerCase();
@@ -419,16 +429,15 @@ const WordleGame = ({
     //Request Type
     method: 'GET',
   })
-      //If response is in json then in success
-    .then((response) => {
-      response.json().then(responseJson => {
-        //Success
-        if(typeof responseJson!== 'undefined'){
-          setHint(responseJson[0].meanings[0].partOfSpeech);
-          setDefinition(responseJson[0].meanings[0].definitions[0].definition);
-          console.log("Hint and Definition fetched.")
-        }
-      })
+    .then((response) => {response.json()})
+    //If response is in json then in success
+    .then((responseJson) => {
+      //Success
+      if(typeof responseJson!== 'undefined'){
+        setHint(responseJson[0].meanings[0].partOfSpeech);
+        setDefinition(responseJson[0].meanings[0].definitions[0].definition);
+        console.log("Hint and Definition fetched.")
+      }      
     })
     //If response is not in json then in error
     .catch((error) => {
@@ -444,12 +453,12 @@ const WordleGame = ({
     switch (status(game)) {
       case 'win': {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        return 'You won! Congratulations :-)\n\n' + definition;
+        return 'You won! Congratulations :-)\n\n' + definition;
       }
       case 'lost': {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         return (
-          'Sorry, you lost :-( \n the word was: ' +
+          'Sorry, you lost :-( \n the word was: ' +
           game.answer +
           '\n\n' +
           definition
@@ -518,13 +527,24 @@ const WordleGame = ({
 
 const onShare = async () => {
     try {
-      await Share.share({
+      const result = await Share.share({
         message:""+share,
       });
     } catch (error) {
       console.error(error)
     }
   };
+
+const testGame: Wordle = {
+  guesses: ['ROOTS', 'ROTOR', 'FRUIT'],
+  answer: 'ROBOT',
+  words: answers,
+  validwords: allwords,
+  maxGuesses: 6,
+  mode: 'easy',
+  statistics: [],
+};
+
 // the application switches between the two screens, and keep tracks of the statistics
 const App = () => {
   // we have a current game, which can be null
@@ -576,7 +596,7 @@ const App = () => {
     <WordleGame onBack={getStats} startGame={game} />
   );
 };
-//TODO Persistence (1 pts)
+
 const setData = async (stats: number[]) => {
   try {
     const jsonValue = JSON.stringify(stats);
