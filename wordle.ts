@@ -84,8 +84,7 @@ export const rateGuesses = (guess: string, answer: string): LetterGuess[] => {
   const {result, guessLeft, wordLeft} = corrects(stringToWord(guess), stringToWord(answer))
   const secondResult = misplaced(guessLeft, wordLeft)
   const incorrects: LetterGuess[] = secondResult.guessLeft.map(letter => ({letter, kind: "absent" }))
-  const allResults = [...result, ...secondResult.result, ...incorrects].sort((a, b) => a.letter.index - b.letter.index)
-  return allResults
+  return [...result, ...secondResult.result, ...incorrects].sort((a, b) => a.letter.index - b.letter.index)
 }
 
 // a simple test function for evalauting the guesses
@@ -187,7 +186,6 @@ console.assert(isValidHard("zcvab","abcdf","abczx"))
 // the function that tests if a guess is valid, taking into account the game mode
 export const isValidGuess = (guess: string, {mode, validwords, answer, guesses}: Wordle) => {
   if (!isValid(guess, validwords)) {
-    
     return false
   }
   // additional check if we are in hard mode
@@ -204,12 +202,6 @@ export const isValidGuess = (guess: string, {mode, validwords, answer, guesses}:
 // a very basic statistics rendering
 // "7" means that the game was lost
 // an improved version would render this more clearly
-const stats = (statistics: number[]): string => {
-  const buckets = [1, 2, 3, 4, 5, 6, 7].map(num => statistics.filter(s => s === num))
-  return buckets.map((bucket, index) => (index + 1) + ": " + bucket.length).join("\n")
-}
-
-
 // this section deals with multiple turns of the game
 // mostly removed since not needed in RN version
 
