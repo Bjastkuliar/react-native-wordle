@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "thatwordle-solution",
-    "slug": "snack-bb9b2b78-4a01-441c-94ac-b275f81ea243",
+    "name": "dordle-solution",
+    "slug": "snack-211d730c-8071-4d71-a793-636da4355396",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,10 +21,16 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "org.expo.androidExpoTest1"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "13482361-8139-4295-a92a-28edcbbe89d6"
+      }
     }
   }
 }
