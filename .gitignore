@@ -11,6 +11,7 @@ npm-debug.*
 *.key
 *.mobileprovision
 *.orig.*
+index.js
 
 yarn.lock
 package-lock.json
