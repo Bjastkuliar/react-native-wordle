@@ -25,7 +25,7 @@ type MultiWordleCallback = (arg: Wordle[]) => void
 let share: string|null = null
 function appendGuess(guess: LetterGuess): string {
     let tmp = share;
-    let append = ' ';
+    let append: string;
     switch (guess.kind) {
         case 'correct': {
             append = '🟩';
@@ -88,7 +88,15 @@ const Board = ({game, guess, valid}:{game: Wordle, guess: string, valid: boolean
             share+="\n"
         })
     }
-    return (<View style={{margin: 8}}>{allGuesses.map(g => <BoardRow letters={g}/>)}</View>)
+    return (
+        <View style={{margin: 8}}>
+                {allGuesses.map(
+                    g =>
+                        <BoardRow letters={g}/>
+                    )
+                }
+        </View>
+    )
 }
 
 const halves = <A,>(list:A[]): [A[],A[]] => {
@@ -135,8 +143,8 @@ const KeyBoard = ({games, valid, empty, onPress, onEnter, onDelete}:
     const rows =  ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
     // we have to group the guesses by letters, and for that we use the "zip" function
     const coloredRows:LetterGuess[][][] = rows.map(r => zip(games.map(game => bestGuesses(r, game.guesses, game.answer))))
-    const toKey = (guesses: LetterGuess[]) => <MultiKey guesses={guesses} onPress={onPress}/>
-    const toKeys = (row: LetterGuess[][]) => <View style={styles.row}>{row.map(g => toKey(g))}</View>
+    const toKey = (guesses: LetterGuess[]) => <MultiKey guesses={guesses} onPress={onPress} key={"key"+guesses.toString()}/>
+    const toKeys = (row: LetterGuess[][]) => <View style={styles.row} key={row.toString()}>{row.map(g => toKey(g))}</View>
 
     return (
       <View>
@@ -144,8 +152,15 @@ const KeyBoard = ({games, valid, empty, onPress, onEnter, onDelete}:
           <View style={[styles.row, styles.centered]}>
               <Button title="enter" onPress={onEnter} disabled={!valid}/>
               <Button title="delete" onPress={onDelete} disabled={empty}/>
+              <Button title="share" onPress={onShare} disabled={!areWordlesDone(games)}/>
           </View>
       </View>)
+}
+
+const areWordlesDone = (games: Wordle[]):boolean =>{
+    let done = false;
+    games.forEach(game => done = game.guesses.length == 6);
+    return done;
 }
 
 const Bar = ({title, percent, color}:{title: string, percent: number, color: "red"|"green"}) => (
@@ -256,7 +271,7 @@ const Settings = ({onStart, statistics}:{onStart: MultiWordleCallback, statistic
   <ScrollView style={styles.container} contentContainerStyle={{justifyContent: 'center'}} >
     <Card style={styles.card}>
         <Text style={styles.paragraph}>{gameType} Settings</Text>
-        {words.map((word, index) => <WordleSettings init={init} gameIndex={index} list={answers} onSelect={selectWord} /> )}
+        {words.map((word, index) => <WordleSettings init={init} gameIndex={index} list={answers} onSelect={selectWord} key={"game"+index}/> )}
         <Button title="Add game" onPress={addGame} />
         <Button title="Remove game" onPress={removeGame} disabled={words.length <= 1}/>
         <Button title="Start" onPress={startGame} />
