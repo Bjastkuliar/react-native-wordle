@@ -1,7 +1,7 @@
 // this is a version of wordle that support multiple games (2, 3, 4, 5, ...)
 // it is very similar to the wordle version with one game
 // here we highlight only the differences between the two versions
-// for detailed comments of the components of the single game version, refer to:
+// for detailled comments of the components of the single game version, refer to:
 // https://snack.expo.dev/@rrobbes/wordle-solution
 
 
@@ -9,9 +9,9 @@
 // sometimes typescript fails to process these two modules, but they work fine in javascript
 import {allwords} from './allwords';
 import {answers} from './answers';
-import {Letter, LetterGuess, Wordle, rateGuesses, bestGuesses, fillGuesses, isValidGuess, isValidPrefix, randomWord, status, stringToWord} from './wordle';
+import {Letter, Guess, LetterGuess, Wordle, rateGuesses, bestGuesses, fillGuesses, isValidGuess, isValidPrefix, randomWord, newWordle, status, stringToWord} from './wordle';
 import React, {useState} from 'react';
-import {Text, View, StyleSheet, Pressable, Button, TextInput, ScrollView, Share} from 'react-native';
+import { Text, View, StyleSheet, Pressable, Button, Switch, TextInput, ScrollView } from 'react-native';
 import Constants from 'expo-constants';
 import { Card } from 'react-native-paper';
 
@@ -20,36 +20,9 @@ import { Card } from 'react-native-paper';
 
 type StrCallback = (arg: string) => void
 type Callback = () => void
+type WordleCallback = (arg: Wordle) => void
 type MultiWordleCallback = (arg: Wordle[]) => void
 
-let share: string|null = null
-function appendGuess(guess: LetterGuess): string {
-    let tmp = share;
-    let append: string;
-    switch (guess.kind) {
-        case 'correct': {
-            append = '🟩';
-            break;
-        }
-        case 'misplaced': {
-            append = '🟨';
-            break;
-        }
-        default:
-            append = '⬜';
-    }
-    return tmp + append;
-}
-
-const onShare = async () => {
-    try {
-        await Share.share({
-            message:""+share,
-        });
-    } catch (error) {
-        console.error(error)
-    }
-};
 
 const background = (g: LetterGuess) => {
   switch (g.kind) {
@@ -69,34 +42,14 @@ const BoardRow = ({letters}:{letters: LetterGuess[]}) => (
 )
 
 const Board = ({game, guess, valid}:{game: Wordle, guess: string, valid: boolean}) => {
-    //The list holding all the present guesses
     const guesses = game.guesses.map((guess:string) => 
           rateGuesses(guess, game.answer))
-    //The list representing the current try (that is an empty row awaiting letters)
     const filled: LetterGuess[] = [...guess, ...(new Array(game.answer.length - guess.length)).fill(" ")].map((char, idx) => 
-          ({letter: {character: char, index: idx}, kind: valid?"untried":"absent"}))
-    //The list holding the empty rows of the board
+          ({letter: {character: char, index: idx}, kind: valid?"untried":"absent"})) 
     const empties = fillGuesses([], game.maxGuesses - game.guesses.length - 1).map((guess:string) => 
           stringToWord(guess).map((l:Letter) => ({letter: l, kind: 'untried'})))
     const allGuesses: LetterGuess[][] = (guesses.length>=game.maxGuesses)?guesses:[...guesses, filled, ...empties]
-    if(guesses.length>=game.maxGuesses){
-        share = `Answer: ${game.answer}\nAttempts: ${game.maxGuesses}\n\n`
-        allGuesses.map((guess)=>{
-            guess.map((letter)=>{
-                share = appendGuess(letter)
-            })
-            share+="\n"
-        })
-    }
-    return (
-        <View style={{margin: 8}}>
-                {allGuesses.map(
-                    g =>
-                        <BoardRow letters={g}/>
-                    )
-                }
-        </View>
-    )
+    return (<View style={{margin: 8}}>{allGuesses.map(g => <BoardRow letters={g}/>)}</View>)
 }
 
 const halves = <A,>(list:A[]): [A[],A[]] => {
@@ -143,8 +96,8 @@ const KeyBoard = ({games, valid, empty, onPress, onEnter, onDelete}:
     const rows =  ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
     // we have to group the guesses by letters, and for that we use the "zip" function
     const coloredRows:LetterGuess[][][] = rows.map(r => zip(games.map(game => bestGuesses(r, game.guesses, game.answer))))
-    const toKey = (guesses: LetterGuess[]) => <MultiKey guesses={guesses} onPress={onPress} key={"key"+guesses.toString()}/>
-    const toKeys = (row: LetterGuess[][]) => <View style={styles.row} key={row.toString()}>{row.map(g => toKey(g))}</View>
+    const toKey = (guesses: LetterGuess[]) => <MultiKey guesses={guesses} onPress={onPress}/>
+    const toKeys = (row: LetterGuess[][]) => <View style={styles.row}>{row.map(g => toKey(g))}</View>
 
     return (
       <View>
@@ -152,15 +105,8 @@ const KeyBoard = ({games, valid, empty, onPress, onEnter, onDelete}:
           <View style={[styles.row, styles.centered]}>
               <Button title="enter" onPress={onEnter} disabled={!valid}/>
               <Button title="delete" onPress={onDelete} disabled={empty}/>
-              <Button title="share" onPress={onShare} disabled={!areWordlesDone(games)}/>
           </View>
       </View>)
-}
-
-const areWordlesDone = (games: Wordle[]):boolean =>{
-    let done = false;
-    games.forEach(game => done = game.guesses.length == 6);
-    return done;
 }
 
 const Bar = ({title, percent, color}:{title: string, percent: number, color: "red"|"green"}) => (
@@ -175,7 +121,7 @@ const Statistics = ({stats, max}:{stats: number[], max: number}) => {
     const buckets = [... Array(max+1).keys()].map(num =>stats.filter(s => s === num))
     const maximum = stats.length===0?1:stats.length
     const percents = buckets.map(b => Math.floor(100 * (b.length / maximum) ))
-    console.log("test");
+
     return (
       <View>
         {percents.map((p, idx) => {
@@ -268,10 +214,10 @@ const Settings = ({onStart, statistics}:{onStart: MultiWordleCallback, statistic
   const gameStats = statistics.filter(st => st.game === gameType).map(st => st.attempts)
 
   return (
-  <ScrollView style={styles.container} contentContainerStyle={{justifyContent: 'center'}} >
+  <ScrollView style={styles.container} > 
     <Card style={styles.card}>
         <Text style={styles.paragraph}>{gameType} Settings</Text>
-        {words.map((word, index) => <WordleSettings init={init} gameIndex={index} list={answers} onSelect={selectWord} key={"game"+index}/> )}
+        {words.map((word, index) => <WordleSettings init={init} gameIndex={index} list={answers} onSelect={selectWord} /> )}
         <Button title="Add game" onPress={addGame} />
         <Button title="Remove game" onPress={removeGame} disabled={words.length <= 1}/>
         <Button title="Start" onPress={startGame} />
@@ -360,9 +306,20 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
     </View>
   )
 }
+
+const testGame: Wordle = {guesses: ["ROOTS", "ROTOR", "FRUIT"], answer: "ROBOT", words: answers, validwords: allwords, maxGuesses: 6, mode: "easy", statistics: []}
+
+const testGame2: Wordle = {guesses: ["ROOTS", "ROTOR", "FRUIT"], answer: "BEERS", words: answers, validwords: allwords, maxGuesses: 6, mode: "easy", statistics: []}
+
+const testGame3: Wordle = {guesses: ["ROOTS", "ROTOR", "FRUIT"], answer: "MAGIC", words: answers, validwords: allwords, maxGuesses: 6, mode: "easy", statistics: []}
+
+const testGame4: Wordle = {guesses: ["ROOTS", "ROTOR", "FRUIT"], answer: "DRAMA", words: answers, validwords: allwords, maxGuesses: 6, mode: "easy", statistics: []}
+
+
 // the differences are that the callbacks take multiple games now, instead of only one
 // and the change of the format of the statistics
 const App = () => {
+  //const [game, setGame] = useState<Wordle[]>([testGame, testGame2, testGame3, testGame4])
   const [games, setGames] = useState<Wordle[]>([])
   
   const [stats, setStats] = useState<Stats>([])
@@ -398,6 +355,7 @@ export default App
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
     paddingTop: Constants.statusBarHeight,
     backgroundColor: '#ecf0f1',
     padding: 8,
