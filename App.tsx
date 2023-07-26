@@ -43,7 +43,7 @@ function appendGuess(guess: LetterGuess): string {
 
 const onShare = async () => {
     try {
-        const result = await Share.share({
+        await Share.share({
             message:""+share,
         });
     } catch (error) {
