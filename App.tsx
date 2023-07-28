@@ -79,7 +79,9 @@ const Board = ({game, guess, valid}:{game: Wordle, guess: string, valid: boolean
     const empties = fillGuesses([], game.maxGuesses - game.guesses.length - 1).map((guess:string) => 
           stringToWord(guess).map((l:Letter) => ({letter: l, kind: 'untried'})))
     const allGuesses: LetterGuess[][] = (guesses.length>=game.maxGuesses)?guesses:[...guesses, filled, ...empties]
-    if(guesses.length>=game.maxGuesses){
+
+    //The share string gets computed only at the end of the game
+    if(guesses.length==game.maxGuesses){
         share = `Answer: ${game.answer}\nAttempts: ${game.maxGuesses}\n\n`
         allGuesses.map((guess)=>{
             guess.map((letter)=>{
@@ -88,6 +90,7 @@ const Board = ({game, guess, valid}:{game: Wordle, guess: string, valid: boolean
             share+="\n"
         })
     }
+
     return (
         <View style={{margin: 8}}>
                 {allGuesses.map(
@@ -180,7 +183,7 @@ const Statistics = ({stats, max}:{stats: number[], max: number}) => {
       <View>
         {percents.map((p, idx) => {
               const lost = (idx === 0)
-              return <Bar title={lost?"lost":`${idx} tries`} percent={p} color={lost?"red":"green"}/> })}
+              return <Bar title={lost?"lost":`${idx} tries`} percent={p} color={lost?"red":"green"} key={"statistics_"+idx}/> })}
       </View>
     )
 }
@@ -253,12 +256,24 @@ const Settings = ({onStart, statistics}:{onStart: MultiWordleCallback, statistic
     setWords(newWords)
   }
 
+  //Initialises the game(s) with one or more random answers
   const startGame = () => {
     const gameAnswers:string[] = words.map(word =>  word===init?randomWord(answers):word)
     console.log(gameAnswers)
     const attempts = 5 + gameAnswers.length
     const games = gameAnswers.map(answer => 
-          ({guesses: [], answer: answer, words: answers, validwords: allwords, maxGuesses: attempts, mode: "easy", statistics:[]}))
+          (
+              {
+                  guesses: [],
+                  answer: answer,
+                  words: answers,
+                  valid_words: allwords,
+                  maxGuesses: attempts,
+                  mode: "easy",
+                  statistics:[]
+              }
+          )
+    )
     onStart(games)
   }
 
@@ -271,7 +286,7 @@ const Settings = ({onStart, statistics}:{onStart: MultiWordleCallback, statistic
   <ScrollView style={styles.container} contentContainerStyle={{justifyContent: 'center'}} >
     <Card style={styles.card}>
         <Text style={styles.paragraph}>{gameType} Settings</Text>
-        {words.map((word, index) => <WordleSettings init={init} gameIndex={index} list={answers} onSelect={selectWord} key={"game"+index}/> )}
+        {words.map((word, index) => <WordleSettings init={init} gameIndex={index} list={answers} onSelect={selectWord} key={"game_"+index}/> )}
         <Button title="Add game" onPress={addGame} />
         <Button title="Remove game" onPress={removeGame} disabled={words.length <= 1}/>
         <Button title="Start" onPress={startGame} />
@@ -309,7 +324,7 @@ const gameName = (games: Wordle[]): string => {
 const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: MultiWordleCallback}) => {
   const [guess, setGuess] = useState<string>("")
   const [games, setGames] = useState<Wordle[]>(startGames)
-  const prefixValid = isValidPrefix(guess, games[0].validwords)
+  const prefixValid = isValidPrefix(guess, games[0].valid_words)
   const enterValid = isValidGuess(guess, games[0])
 
   const keyPress = (char:string) => setGuess(guess + char)
