@@ -15,6 +15,7 @@ index.js
 
 yarn.lock
 package-lock.json
+yarn-error.log
 
 # macOS
 .DS_Store

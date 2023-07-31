@@ -14,6 +14,7 @@ import React, {useState} from 'react';
 import {Text, View, StyleSheet, Pressable, Button, TextInput, ScrollView, Share} from 'react-native';
 import Constants from 'expo-constants';
 import { Card } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // one change is that we do not use files for reading the words anymore, for simplicity
 // the resources are defined in TypeScript modules
@@ -21,6 +22,17 @@ import { Card } from 'react-native-paper';
 type StrCallback = (arg: string) => void
 type Callback = () => void
 type MultiWordleCallback = (arg: Wordle[]) => void
+
+//DONE Sharing (1 pts)
+const onShare = async () => {
+    try {
+        await Share.share({
+            message:""+share,
+        });
+    } catch (error) {
+        console.error(error)
+    }
+};
 
 let share: string|null = null
 function appendGuess(guess: LetterGuess): string {
@@ -41,16 +53,6 @@ function appendGuess(guess: LetterGuess): string {
     return tmp + append;
 }
 
-const onShare = async () => {
-    try {
-        await Share.share({
-            message:""+share,
-        });
-    } catch (error) {
-        console.error(error)
-    }
-};
-
 const background = (g: LetterGuess) => {
   switch (g.kind) {
     case "correct": return styles.correct
@@ -64,8 +66,9 @@ const BoardLetter = ({guess}:{guess: LetterGuess}) => (
   <View style={[styles.boardCell, background(guess)]}><Text style={styles.keyText}>{guess.letter.character}</Text></View>
   )
 
+let board_key = 0;
 const BoardRow = ({letters}:{letters: LetterGuess[]}) => (
-  <View style = {styles.row}>{letters.map(l => <BoardLetter guess={l} />)}</View>
+  <View style = {styles.row}>{letters.map(l => <BoardLetter guess={l} key={"board_letter_"+board_key++}/>)}</View>
 )
 
 const Board = ({game, guess, valid}:{game: Wordle, guess: string, valid: boolean}) => {
@@ -91,11 +94,13 @@ const Board = ({game, guess, valid}:{game: Wordle, guess: string, valid: boolean
         })
     }
 
+    let boardRowCount = 0;
+
     return (
         <View style={{margin: 8}}>
                 {allGuesses.map(
                     g =>
-                        <BoardRow letters={g}/>
+                        <BoardRow letters={g} key={"board_row_"+boardRowCount++}/>
                     )
                 }
         </View>
@@ -114,9 +119,10 @@ const halves = <A,>(list:A[]): [A[],A[]] => {
 const MultiKey = ({guesses, onPress}:{guesses: LetterGuess[], onPress: StrCallback}) => {
   // we split our list of guesses in two columns
   // there's a special when there is only one game, we just put the same view in two positions
-  const [l,r] = halves(guesses)
-  const left =  l.map((g) => <View style={[background(g), {flex: 1}]} />)
-  const right = r.map((g) => <View style={[background(g), {flex: 1}]} />)
+  const [l,r] = halves(guesses);
+  let l_count = 0, r_count= 0;
+  const left =  l.map((g) => <View style={[background(g), {flex: 1}]} key={"l_key_"+l_count++} />)
+  const right = r.map((g) => <View style={[background(g), {flex: 1}]} key={"r_key_"+r_count++}/>)
   
 
   return (
@@ -134,20 +140,28 @@ const MultiKey = ({guesses, onPress}:{guesses: LetterGuess[], onPress: StrCallba
 
 // you have [[a, b, c],[a, b, c],[a, b, c],[a, b, c]]
 // you want [[a, a, a, a], [b, b, b, b], [c, c, c, c]]
-// this is what the zip function does
+// this is what the zip function does,
 // we use it to group together the guess hints for each letter
 const zip = <A,>(arrays:A[][]):A[][] => arrays[0].map((val, idx) => arrays.map(array => array[idx]))
 
 // the keyboard now takes multiple games as a prop
 // and computes the colors for each game, using the function from assignment 1
 const KeyBoard = ({games, valid, empty, onPress, onEnter, onDelete}:
-        {games: Wordle[], valid: boolean, empty:boolean, onPress: StrCallback, onEnter: Callback, onDelete: Callback}) => {
+        {games: Wordle[],
+            valid: boolean,
+            empty:boolean,
+            onPress: StrCallback,
+            onEnter: Callback,
+            onDelete: Callback}) => {
     
     const rows =  ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
     // we have to group the guesses by letters, and for that we use the "zip" function
     const coloredRows:LetterGuess[][][] = rows.map(r => zip(games.map(game => bestGuesses(r, game.guesses, game.answer))))
-    const toKey = (guesses: LetterGuess[]) => <MultiKey guesses={guesses} onPress={onPress} key={"key"+guesses.toString()}/>
-    const toKeys = (row: LetterGuess[][]) => <View style={styles.row} key={row.toString()}>{row.map(g => toKey(g))}</View>
+    let row_num = 0, key_num = 0;
+    //Keyboard key
+    const toKey = (guesses: LetterGuess[]) => <MultiKey guesses={guesses} onPress={onPress} key={"key_"+key_num++}/>
+    //Keyboard row
+    const toKeys = (row: LetterGuess[][]) => <View style={styles.row} key={"keyboard_row_"+row_num++} >{row.map(g => toKey(g))}</View>
 
     return (
       <View>
@@ -178,7 +192,6 @@ const Statistics = ({stats, max}:{stats: number[], max: number}) => {
     const buckets = [... Array(max+1).keys()].map(num =>stats.filter(s => s === num))
     const maximum = stats.length===0?1:stats.length
     const percents = buckets.map(b => Math.floor(100 * (b.length / maximum) ))
-    console.log("test");
     return (
       <View>
         {percents.map((p, idx) => {
@@ -327,7 +340,18 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
   const prefixValid = isValidPrefix(guess, games[0].valid_words)
   const enterValid = isValidGuess(guess, games[0])
 
-  const keyPress = (char:string) => setGuess(guess + char)
+  //DONE Fix the ArrayOutOfBound Exception
+  /*Performs a check before appending a new letter,
+  * if the letter to be appended would extend the guess over
+  * the maximum length of a guess, it is logged in the console instead
+  * and the last letter is not added.*/
+  const keyPress = (char:string) => {
+      if(guess.length+1<startGames[0].maxGuesses){
+          setGuess(guess + char)
+      } else {
+          console.log("User tried to enter one more character!")
+      }
+  }
   
   const backspace = () => setGuess(guess.slice(0, -1))
   const addGuess = () => {
@@ -343,10 +367,10 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
       }
   }
 
-
   const [l, r] = halves(games)
   const alone = r.length === 0
-  const shorter = r.length < l.length
+  const shorter = r.length < l.length;
+  let l_count = 0, r_count  = 0;
 
   return (
    <View style={styles.container}>
@@ -356,12 +380,12 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
           <Card style={styles.card}>
           <View style={styles.row}>
               <View style={{flex: 10}}>
-                  {l.map((game) => <Board game={game} guess={guess} valid={prefixValid} />)}
+                  {l.map((game) => <Board game={game} guess={guess} valid={prefixValid} key={"l_game_"+l_count++}/>)}
               </View>
               {alone?
               null:(
               <View style={{flex: 10}}>
-                  {r.map((game) => <Board game={game} guess={guess} valid={prefixValid} />)}
+                  {r.map((game) => <Board game={game} guess={guess} valid={prefixValid} key={"r_game_"+r_count++}/>)}
                   {shorter?<View style={{flex: 1}}/>:null}
               </View>)}
           </View>
@@ -378,9 +402,16 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
 // the differences are that the callbacks take multiple games now, instead of only one
 // and the change of the format of the statistics
 const App = () => {
-  const [games, setGames] = useState<Wordle[]>([])
+  const [games, setGames] = useState<Wordle[]>([]);
+
+  //are the stats to be updated? if false skips updating the stats
+  const [statState, setStatState] = useState<boolean>(true);
   
-  const [stats, setStats] = useState<Stats>([])
+  const [stats, setStats] = useState<Stats>([]);
+
+  if(!statState){
+      getData(setStats).then(() => setStatState(false));
+  }
 
   const startPlaying = (games: Wordle[]) => {
     setGames(games)
@@ -398,7 +429,10 @@ const App = () => {
           case "lost": setStats([...stats, {game, attempts: 0}]); break;
           case "win": setStats([...stats,  {game, attempts}]); break;
       }
-      stopPlaying()
+      setData(stats).then(() => {
+          stopPlaying();
+          setStatState(true);
+      });
   }
 
   return (
@@ -409,6 +443,50 @@ const App = () => {
 }
 
 export default App
+
+//TO-DO LIST
+//DONE Fix the ArrayOutOfBound Exception
+//TODO Dictionary API integration (mandatory, 2pt)
+//TODO Persistence (1 pts)
+//DONE Sharing (1 pts)
+//TODO Haptics (1 pts)
+//TODO Challenges (2 pts)
+//TODO Advanced Dictionary integration (2 pts)
+//TODO Dordle: eternal edition (2 pts)
+//TODO Advanced challenges (4 pts, for ambitious students!)
+
+//TOTAL COUNT OF CURRENT POINTS: 1 / 10
+
+//TODO Persistence (1 pts)
+const setData = async (stats: Stats) => {
+    try {
+        const jsonValue = JSON.stringify(stats);
+        await AsyncStorage.setItem('stats', jsonValue);
+        console.log("Set statistics successfully!");
+    } catch (e) {
+        // saving error
+        console.error(e);
+    }
+    console.log('updated the statistics with: ' + stats);
+};
+
+const getData = async (
+    setStats: React.Dispatch<React.SetStateAction<Stats>>
+) => {
+    try {
+        const jsonValue = await AsyncStorage.getItem('stats');
+        if(jsonValue==null){
+            setStats([]);
+            console.error("Null data in stats!")
+        } else {
+            setStats(JSON.parse(jsonValue));
+            console.log("Retrieved statistics successfully!");
+        }
+    } catch (e) {
+        // error reading value
+        console.error(e);
+    }
+};
 
 const styles = StyleSheet.create({
   container: {
