@@ -119,9 +119,10 @@ const halves = <A,>(list:A[]): [A[],A[]] => {
 const MultiKey = ({guesses, onPress}:{guesses: LetterGuess[], onPress: StrCallback}) => {
   // we split our list of guesses in two columns
   // there's a special when there is only one game, we just put the same view in two positions
-  const [l,r] = halves(guesses)
-  const left =  l.map((g) => <View style={[background(g), {flex: 1}]} />)
-  const right = r.map((g) => <View style={[background(g), {flex: 1}]} />)
+  const [l,r] = halves(guesses);
+  let l_count = 0, r_count= 0;
+  const left =  l.map((g) => <View style={[background(g), {flex: 1}]} key={"l_key_"+l_count++} />)
+  const right = r.map((g) => <View style={[background(g), {flex: 1}]} key={"r_key_"+r_count++}/>)
   
 
   return (
@@ -339,7 +340,18 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
   const prefixValid = isValidPrefix(guess, games[0].valid_words)
   const enterValid = isValidGuess(guess, games[0])
 
-  const keyPress = (char:string) => setGuess(guess + char)
+  //DONE Fix the ArrayOutOfBound Exception
+  /*Performs a check before appending a new letter,
+  * if the letter to be appended would extend the guess over
+  * the maximum length of a guess, it is logged in the console instead
+  * and the last letter is not added.*/
+  const keyPress = (char:string) => {
+      if(guess.length+1<startGames[0].maxGuesses){
+          setGuess(guess + char)
+      } else {
+          console.log("User tried to enter one more character!")
+      }
+  }
   
   const backspace = () => setGuess(guess.slice(0, -1))
   const addGuess = () => {
@@ -354,7 +366,6 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
           default: return ""
       }
   }
-
 
   const [l, r] = halves(games)
   const alone = r.length === 0
@@ -434,7 +445,7 @@ const App = () => {
 export default App
 
 //TO-DO LIST
-//TODO Fix the ArrayOutOfBound Exception
+//DONE Fix the ArrayOutOfBound Exception
 //TODO Dictionary API integration (mandatory, 2pt)
 //TODO Persistence (1 pts)
 //DONE Sharing (1 pts)
