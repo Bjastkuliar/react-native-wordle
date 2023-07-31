@@ -89,32 +89,6 @@ export const rateGuesses = (guess: string, answer: string): LetterGuess[] => {
 
 // a simple test function for evalauting the guesses
 // the expected result is a string of "colors"
-const testGuess = (guess: string, answer: string, expected: string): void => {
-  const result = rateGuesses(guess, answer).map((g: LetterGuess) => {
-    switch (g.kind) {
-      case "correct": return "G";
-      case "misplaced": return "Y";
-      case "absent": return "R"; 
-    }
-  }).join("")
-  console.assert(result === expected, "\nguess:  %s\nanswer: %s \nexpect: %s\nresult: %s", guess, answer, expected, result)
-}
-
-testGuess("aa","aa","GG")
-testGuess("aab","aaa","GGR")
-testGuess("hello","wells","RGGGR")
-testGuess("rotor","robot","GGYGR")
-testGuess("roots","robot","GGYYR")
-testGuess("robot","roots","GGRYY")
-testGuess("robot","rotor","GGRGY")
-testGuess("mummy","money","GRRRG")
-testGuess("money","mummy","GRRRG")
-testGuess("mummy","hummm","YGGGR")
-testGuess("hummm","mummy","RGGGY")
-testGuess("mummu","muumy","GGRGY")
-testGuess("abcde","edcba","YYGYY")
-
-
 // this set of function is dedicated to "coloring the keyboard"
 // for the keyboard, what we want is to get the "best" status among all the guesses
 
@@ -147,7 +121,7 @@ export interface Wordle {
   guesses: string[];
   answer: string;
   words: string[];
-  validwords: string[];
+  valid_words: string[];
   maxGuesses: number;
   mode: "easy"|"hard";
   statistics: number[];
@@ -184,8 +158,8 @@ console.assert(!isValidHard("zxvab","abcdf","abczx"))
 console.assert(isValidHard("zcvab","abcdf","abczx"))
 
 // the function that tests if a guess is valid, taking into account the game mode
-export const isValidGuess = (guess: string, {mode, validwords, answer, guesses}: Wordle) => {
-  if (!isValid(guess, validwords)) {
+export const isValidGuess = (guess: string, {mode, valid_words, answer, guesses}: Wordle) => {
+  if (!isValid(guess, valid_words)) {
     return false
   }
   // additional check if we are in hard mode
@@ -220,19 +194,6 @@ export const randomWord = (answers: string[]): string => {
 }
 
 // this is a function to start a new game
-export const newWordle = (game: Wordle, word: string|null): Wordle => {
-  const answer = word === null? randomWord(game.words): word
-  const gameStatus = status(game)
-  // we make a copy of the game, erasing the guesses, adding the answer
-  // adding statistics, but ONLY if the game was finished
-  switch (gameStatus) {
-    case "next": return {...game, guesses: [], answer: answer} // unfinished game, statistics not added
-    case "lost": return {...game, guesses: [], answer: answer, statistics: [...game.statistics, -1]}
-    case "win": return {...game, guesses: [], answer: answer, statistics: [...game.statistics, game.guesses.length]}
-  }
-}
-
-
 // a function that processes the input
 // not needed here 
 
