@@ -80,8 +80,8 @@ const Board = ({game, guess, valid}:{game: Wordle, guess: string, valid: boolean
           ({letter: {character: char, index: idx}, kind: valid?"untried":"absent"}))
     //The list holding the empty rows of the board
     const empties = fillGuesses([], game.maxGuesses - game.guesses.length - 1).map((guess:string) => 
-          stringToWord(guess).map((l:Letter) => ({letter: l, kind: 'untried'})))
-    const allGuesses: LetterGuess[][] = (guesses.length>=game.maxGuesses)?guesses:[...guesses, filled, ...empties]
+          stringToWord(guess).map((l:Letter) : LetterGuess => ({letter: l, kind: 'untried'})))
+    const allGuesses : LetterGuess[][] = (guesses.length>=game.maxGuesses)?guesses:[...guesses, filled, ...empties]
 
     //The share string gets computed only at the end of the game
     if(guesses.length==game.maxGuesses){
@@ -274,7 +274,7 @@ const Settings = ({onStart, statistics}:{onStart: MultiWordleCallback, statistic
     const gameAnswers:string[] = words.map(word =>  word===init?randomWord(answers):word)
     console.log(gameAnswers)
     const attempts = 5 + gameAnswers.length
-    const games = gameAnswers.map(answer => 
+    const games: Wordle[] = gameAnswers.map(answer =>
           (
               {
                   guesses: [],
@@ -321,7 +321,7 @@ const multiStatus = (games: Wordle[]): "win"|"lost"|"next" => {
     return "next"
 }
 
-const gameName = (games: Wordle[]): string => {
+const gameName = (games: string[]|Wordle[]): string => {
       const names = ["Wordle", "Dordle", "Triordle", "Quordle", "Quindle", "Sexordle", 
       "Heptordle", "Octordle", "Novordle", "Decordle", "Undecordle", "Dodecordle"]
       if (games.length >= names.length) return "WayTooLongordle"
