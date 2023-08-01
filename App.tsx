@@ -10,7 +10,7 @@
 import {allwords} from './allwords';
 import {answers} from './answers';
 import {Letter, LetterGuess, Wordle, rateGuesses, bestGuesses, fillGuesses, isValidGuess, isValidPrefix, randomWord, status, stringToWord} from './wordle';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Text, View, StyleSheet, Pressable, Button, TextInput, ScrollView, Share} from 'react-native';
 import Constants from 'expo-constants';
 import { Card } from 'react-native-paper';
@@ -404,20 +404,25 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
 const App = () => {
   const [games, setGames] = useState<Wordle[]>([]);
 
-  //are the stats to be updated? if false skips updating the stats
-  const [statState, setStatState] = useState<boolean>(true);
-  
-  const [stats, setStats] = useState<Stats>([]);
+    const [stats, setStats] = useState<Stats>([]);
 
-  if(!statState){
-      getData(setStats).then(() => setStatState(false));
-  }
+    //DONE Persistence (1 pts)
+    /*The use effect hook is updating the statistics only once at application startup*/
+  useEffect(()=>{
+      getData().then(statistics => {
+          setStats(statistics)
+          console.log("Test stats: "+stats.toString());
+      });
+  },[]);
 
   const startPlaying = (games: Wordle[]) => {
     setGames(games)
   }
 
-  const stopPlaying = () => setGames([])
+  const stopPlaying = () => {
+      setGames([])
+      setData(stats).then(()=> console.log("Updated statistics with last game."));
+  }
 
   const getStats = (games: Wordle[]) => {
       const game = gameName(games)
@@ -426,13 +431,10 @@ const App = () => {
         }, 0)
       switch (multiStatus(games)) {
           case "next": break; 
-          case "lost": setStats([...stats, {game, attempts: 0}]); break;
-          case "win": setStats([...stats,  {game, attempts}]); break;
+          case "lost": setStats([...stats, {game, attempts: 0}]);break;
+          case "win": setStats([...stats,  {game, attempts}]);break;
       }
-      setData(stats).then(() => {
-          stopPlaying();
-          setStatState(true);
-      });
+      stopPlaying();
   }
 
   return (
@@ -447,7 +449,7 @@ export default App
 //TO-DO LIST
 //DONE Fix the ArrayOutOfBound Exception
 //TODO Dictionary API integration (mandatory, 2pt)
-//TODO Persistence (1 pts)
+//DONE Persistence (1 pts)
 //DONE Sharing (1 pts)
 //TODO Haptics (1 pts)
 //TODO Challenges (2 pts)
@@ -455,37 +457,37 @@ export default App
 //TODO Dordle: eternal edition (2 pts)
 //TODO Advanced challenges (4 pts, for ambitious students!)
 
-//TOTAL COUNT OF CURRENT POINTS: 1 / 10
+//TOTAL COUNT OF CURRENT POINTS: 2 / 10
 
-//TODO Persistence (1 pts)
+//DONE Persistence (1 pts)
 const setData = async (stats: Stats) => {
+    const jsonValue = JSON.stringify(stats);
     try {
-        const jsonValue = JSON.stringify(stats);
         await AsyncStorage.setItem('stats', jsonValue);
         console.log("Set statistics successfully!");
     } catch (e) {
         // saving error
         console.error(e);
     }
-    console.log('updated the statistics with: ' + stats);
+    console.log('updated the statistics with: ' + jsonValue);
 };
 
-const getData = async (
-    setStats: React.Dispatch<React.SetStateAction<Stats>>
-) => {
+const getData = async (): Promise<Stats> => {
+    let stats : Stats = [];
     try {
         const jsonValue = await AsyncStorage.getItem('stats');
         if(jsonValue==null){
-            setStats([]);
-            console.error("Null data in stats!")
+            console.error("Null data in stats!");
         } else {
-            setStats(JSON.parse(jsonValue));
             console.log("Retrieved statistics successfully!");
+            stats = JSON.parse(jsonValue);
         }
+        console.log(jsonValue)
     } catch (e) {
         // error reading value
         console.error(e);
     }
+    return stats;
 };
 
 const styles = StyleSheet.create({
