@@ -5,15 +5,26 @@
 // https://snack.expo.dev/@rrobbes/wordle-solution
 
 
-
 // sometimes typescript fails to process these two modules, but they work fine in javascript
 import {allwords} from './allwords';
 import {answers} from './answers';
-import {Letter, LetterGuess, Wordle, rateGuesses, bestGuesses, fillGuesses, isValidGuess, isValidPrefix, randomWord, status, stringToWord} from './wordle';
+import {
+    bestGuesses,
+    fillGuesses,
+    isValidGuess,
+    isValidPrefix,
+    Letter,
+    LetterGuess,
+    randomWord,
+    rateGuesses,
+    status,
+    stringToWord,
+    Wordle
+} from './wordle';
 import React, {useEffect, useState} from 'react';
-import {Text, View, StyleSheet, Pressable, Button, TextInput, ScrollView, Share} from 'react-native';
+import {Button, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View} from 'react-native';
 import Constants from 'expo-constants';
-import { Card } from 'react-native-paper';
+import {Card} from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // one change is that we do not use files for reading the words anymore, for simplicity
@@ -22,6 +33,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 type StrCallback = (arg: string) => void
 type Callback = () => void
 type MultiWordleCallback = (arg: Wordle[]) => void
+
+interface FetchedWord {
+    word: string,
+    partOfSpeech: string,
+    definition: string,
+    example: string|null
+}
+
+const WORDNIK_API_KEY: string = "uoqnv60vosqot1gurgcgln5e31u3qfaq8qfczhlplgg8g9v3h";
 
 //DONE Sharing (1 pts)
 const onShare = async () => {
@@ -259,10 +279,10 @@ type Stats = {game: string, attempts: number}[]
 // the callback of the settings changes, since it needs to be able to handle multiple games
 // also, the format of the statistics changes a bit, since we need to store the type as well
 // otherwise we would mix wordle and dordle statistics
-const Settings = ({onStart, statistics}:{onStart: MultiWordleCallback, statistics: Stats}) => {
+const Settings = ({onStart, statistics,onWordsFetched}:{onStart: MultiWordleCallback, statistics: Stats,onWordsFetched:React.Dispatch<React.SetStateAction<FetchedWord[]>>}) => {
   const init = "Random"
-  const [words, setWords] = useState<string[]>([init])
-  
+  const [words, setWords] = useState<string[]>([init]);
+
   const selectWord = (word: string, index: number) => {
     let newWords = [...words]
     newWords[index] = word
@@ -271,10 +291,13 @@ const Settings = ({onStart, statistics}:{onStart: MultiWordleCallback, statistic
 
   //Initialises the game(s) with one or more random answers
   const startGame = () => {
-    const gameAnswers:string[] = words.map(word =>  word===init?randomWord(answers):word)
-    console.log(gameAnswers)
-    const attempts = 5 + gameAnswers.length
-    const games: Wordle[] = gameAnswers.map(answer =>
+      const gameAnswers:string[] = words.map(word =>  word===init?randomWord(answers):word)
+      fetchWords(gameAnswers).then(fetchedWords => onWordsFetched(fetchedWords))
+      console.log("Game answers: "+gameAnswers)
+
+      //TODO Note: max attempts here
+      const attempts = 5 + gameAnswers.length
+      const games: Wordle[] = gameAnswers.map(answer =>
           (
               {
                   guesses: [],
@@ -286,7 +309,7 @@ const Settings = ({onStart, statistics}:{onStart: MultiWordleCallback, statistic
                   statistics:[]
               }
           )
-    )
+      )
     onStart(games)
   }
 
@@ -334,11 +357,12 @@ const gameName = (games: string[]|Wordle[]): string => {
  // each column can contain multiple games
  // layout has special cases for one game only, or for an uneven amount of games
  // we need to make sure that we can scroll, otherwise if you have too many games, you don't see anything
-const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: MultiWordleCallback}) => {
-  const [guess, setGuess] = useState<string>("")
-  const [games, setGames] = useState<Wordle[]>(startGames)
-  const prefixValid = isValidPrefix(guess, games[0].valid_words)
-  const enterValid = isValidGuess(guess, games[0])
+const MultiWordleGame = ({startGames, onBack,wordDetails}:{startGames: Wordle[], onBack: MultiWordleCallback, wordDetails:FetchedWord[]}) => {
+  const [guess, setGuess] = useState<string>("");
+  const [games, setGames] = useState<Wordle[]>(startGames);
+  const [msgBox, updateMessage] = useState<string>("");
+  const prefixValid = isValidPrefix(guess, games[0].valid_words);
+  const enterValid = isValidGuess(guess, games[0]);
 
   //DONE Fix the ArrayOutOfBound Exception
   /*Performs a check before appending a new letter,
@@ -360,17 +384,67 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
   }
 
   const message = () => {
+      let msg_to_display = ""
+      //DONE Dictionary API integration (mandatory, 2pt)
+      //DONE Display word definition upon finishing game
       switch(multiStatus(games)) {
-          case "win": return "You won! Congratulations :-)"
-          case "lost":  return "Sorry, you lost :-( \n the missing words were: " + games.filter(game => status(game) === "lost").map(game => game.answer)
-          default: return ""
+          case "win": {
+              msg_to_display = "You won! Congratulations :-)"+"\n"
+              wordDetails.forEach(word=>{
+                  msg_to_display+=word.definition+"\n"
+              })
+              break;
+          }
+          case "lost":  {
+              let lostWords = games.filter(game => status(game) === "lost").map(game => game.answer)
+              msg_to_display = "Sorry, you lost :-( \n the missing words were: \n"
+              lostWords.forEach(word => {
+                  let definition = ""
+                  wordDetails.forEach(wordDetail => {
+                      if(wordDetail.word==word){
+                          definition = wordDetail.definition
+                      }
+                  })
+                  msg_to_display+=word+": "+definition+"\n"
+              })
+              break;
+          }
+          default: {
+              msg_to_display= msgBox
+              break;
+          }
       }
+      return msg_to_display;
   }
 
   const [l, r] = halves(games)
   const alone = r.length === 0
   const shorter = r.length < l.length;
   let l_count = 0, r_count  = 0;
+
+  const displayClues = (desperate: boolean) => {
+      let msg = ""
+      if(desperate) {
+          msg += "Desperate clues: \n"
+          for(let i = 0; i<wordDetails.length;i++){
+              if(wordDetails[i].example!= undefined){
+                  msg+= "Word "+i+1+" :"+wordDetails[i].example+"\n"
+              } else {
+                  console.log("Example for word "+i+" is unavailable!");
+              }
+          }
+      } else {
+          msg += "Clues: \n"
+          for(let i = 0; i<wordDetails.length;i++){
+              if(wordDetails[i].partOfSpeech!= undefined){
+                  msg+= "Word "+i+1+" :"+wordDetails[i].partOfSpeech+"\n"
+              } else {
+                  console.log("Part of Speech for word "+i+" is unavailable!");
+              }
+          }
+      }
+      updateMessage(msg)
+  }
 
   return (
    <View style={styles.container}>
@@ -392,6 +466,16 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
           </Card>
           </ScrollView>
           <Card style={styles.card}>
+              <View style={[styles.row, styles.centered]}>
+                  {//DONE Add "clue" button as well as displaying said clue
+                  }
+                  <Button title={"clue"} onPress={()=> displayClues(false)}/>
+
+                  {
+                      //DONE Add a "desperate clue" button as well as displaying said clue
+                  }
+                  <Button title={"Desperate clue"} onPress={() => displayClues(true)}/>
+              </View>
           <KeyBoard games={games} valid={enterValid} empty={guess === ""} onPress={keyPress} onDelete={backspace} onEnter={addGuess}/>
           </Card>
 
@@ -403,15 +487,14 @@ const MultiWordleGame = ({startGames, onBack}:{startGames: Wordle[], onBack: Mul
 // and the change of the format of the statistics
 const App = () => {
   const [games, setGames] = useState<Wordle[]>([]);
-
-    const [stats, setStats] = useState<Stats>([]);
+  const [fetchedWords, onWordsFetched] = useState<FetchedWord[]>([]);
+  const [stats, setStats] = useState<Stats>([]);
 
     //DONE Persistence (1 pts)
     /*The use effect hook is updating the statistics only once at application startup*/
   useEffect(()=>{
       getData().then(statistics => {
           setStats(statistics)
-          console.log("Test stats: "+stats.toString());
       });
   },[]);
 
@@ -439,8 +522,8 @@ const App = () => {
 
   return (
         games.length===0?
-        <Settings onStart={startPlaying} statistics={stats}/>:
-        <MultiWordleGame onBack={getStats} startGames={games}/>
+        <Settings onStart={startPlaying} statistics={stats} onWordsFetched={onWordsFetched}/>:
+        <MultiWordleGame onBack={getStats} startGames={games} wordDetails={fetchedWords}/>
   )
 }
 
@@ -448,7 +531,7 @@ export default App
 
 //TO-DO LIST
 //DONE Fix the ArrayOutOfBound Exception
-//TODO Dictionary API integration (mandatory, 2pt)
+//DONE Dictionary API integration (mandatory, 2pt)
 //DONE Persistence (1 pts)
 //DONE Sharing (1 pts)
 //TODO Haptics (1 pts)
@@ -457,7 +540,7 @@ export default App
 //TODO Dordle: eternal edition (2 pts)
 //TODO Advanced challenges (4 pts, for ambitious students!)
 
-//TOTAL COUNT OF CURRENT POINTS: 2 / 10
+//TOTAL COUNT OF CURRENT POINTS: 4 / 10
 
 //DONE Persistence (1 pts)
 const setData = async (stats: Stats) => {
@@ -482,13 +565,83 @@ const getData = async (): Promise<Stats> => {
             console.log("Retrieved statistics successfully!");
             stats = JSON.parse(jsonValue);
         }
-        console.log(jsonValue)
+        console.log("Current statistics: "+jsonValue)
     } catch (e) {
         // error reading value
         console.error(e);
     }
     return stats;
 };
+
+//DONE Dictionary API integration (mandatory, 2pt)
+//DONE Implement word fetching
+//DONE Implement UI actions on fetched data
+
+//queries Wordnik for a word
+async function fetchWordData(word:string){
+    const url : string = "https://api.wordnik.com/v4/word.json/"+word.toLowerCase()+"/definitions?limit=200&includeRelated=false&sourceDictionaries=all&useCanonical=false&includeTags=false&api_key="+WORDNIK_API_KEY;
+    const response = await fetch(url);
+    return await response.json();
+}
+
+async function fetchWords(gameAnswers: string[]): Promise<FetchedWord[]>{
+    let fetchedWords: FetchedWord[] = [];
+    gameAnswers.forEach(answer => {
+        fetchCompleteWord(answer).then(fetchedWord =>
+            fetchedWords.push(fetchedWord)
+        )
+    })
+    return fetchedWords;
+}
+
+//processes the response received from wordnik into a FetchedWord object
+async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
+
+    //needed in order to prevent an overflow of requests to the api
+    let wordDetails: FetchedWord = {
+        word : "Random",
+        partOfSpeech: "undefined",
+        definition: "undefined",
+        example: null
+    }
+    let definitionIndex = 0, score = 0, maxScore = 0, maxScoreIndex = 0;
+    console.log("Fetching word definition for "+theWord)
+    const responseJson = await fetchWordData(theWord);
+    while(responseJson[definitionIndex]!= undefined){
+        score = 0;
+        /*responseJson is a list of different definitions,
+        * I chose to try and sort out the "best one" since many
+        * of them are missing the definition and/or the examples.*/
+        if(responseJson[definitionIndex].text!=undefined){
+            score ++;
+        }
+        if(responseJson[definitionIndex].partOfSpeech!=undefined){
+            score++
+        }
+        if(responseJson[definitionIndex].example!= undefined){
+            score++
+        }
+        if(score> maxScore){
+            maxScore = score;
+            maxScoreIndex = definitionIndex;
+        }
+        //if one definition has all three necessary components, we quit searching
+        if(maxScore==3){
+            break;
+        }
+
+        definitionIndex++
+    }
+    wordDetails.definition=responseJson[maxScoreIndex].text;
+    wordDetails.partOfSpeech=responseJson[maxScoreIndex].partOfSpeech;
+    wordDetails.example=responseJson[maxScoreIndex].example;
+    console.log("Word: "+wordDetails.word)
+    console.log("PartOfSpeech: "+wordDetails.partOfSpeech)
+    console.log("Definition: "+wordDetails.definition)
+    console.log("Example: "+wordDetails.example)
+    wordDetails.word = theWord;
+    return wordDetails;
+}
 
 const styles = StyleSheet.create({
   container: {
