@@ -26,6 +26,7 @@ import {Button, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View}
 import Constants from 'expo-constants';
 import {Card} from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
 
 // one change is that we do not use files for reading the words anymore, for simplicity
 // the resources are defined in TypeScript modules
@@ -279,7 +280,7 @@ type Stats = {game: string, attempts: number}[]
 // the callback of the settings changes, since it needs to be able to handle multiple games
 // also, the format of the statistics changes a bit, since we need to store the type as well
 // otherwise we would mix wordle and dordle statistics
-const Settings = ({onStart, statistics,onWordsFetched}:{onStart: MultiWordleCallback, statistics: Stats,onWordsFetched:React.Dispatch<React.SetStateAction<FetchedWord[]>>}) => {
+const Settings = ({onStart, statistics,onWordsFetched,setStats}:{onStart: MultiWordleCallback, statistics: Stats,onWordsFetched:React.Dispatch<React.SetStateAction<FetchedWord[]>>,setStats:React.Dispatch<React.SetStateAction<Stats>>}) => {
   const init = "Random"
   const [words, setWords] = useState<string[]>([init]);
 
@@ -318,6 +319,7 @@ const Settings = ({onStart, statistics,onWordsFetched}:{onStart: MultiWordleCall
   const gameType = gameName(words)
   const gameStats = statistics.filter(st => st.game === gameType).map(st => st.attempts)
 
+    //TODO add challenge screen here
   return (
   <ScrollView style={styles.container} contentContainerStyle={{justifyContent: 'center'}} >
     <Card style={styles.card}>
@@ -328,6 +330,7 @@ const Settings = ({onStart, statistics,onWordsFetched}:{onStart: MultiWordleCall
         <Button title="Start" onPress={startGame} />
     </Card>
     <Card style={styles.card}>
+        <Button title={"Clear Statistics"} onPress={()=> clearData(setStats)}/>
         <Text style={styles.paragraph}>{gameType} Statistics</Text>
         <Statistics stats={gameStats} max={words.length + 5}/>
     </Card>
@@ -522,7 +525,7 @@ const App = () => {
 
   return (
         games.length===0?
-        <Settings onStart={startPlaying} statistics={stats} onWordsFetched={onWordsFetched}/>:
+        <Settings onStart={startPlaying} statistics={stats} onWordsFetched={onWordsFetched} setStats={setStats}/>:
         <MultiWordleGame onBack={getStats} startGames={games} wordDetails={fetchedWords}/>
   )
 }
@@ -560,7 +563,7 @@ const getData = async (): Promise<Stats> => {
     try {
         const jsonValue = await AsyncStorage.getItem('stats');
         if(jsonValue==null){
-            console.error("Null data in stats!");
+            console.log("Statistics are empty!");
         } else {
             console.log("Retrieved statistics successfully!");
             stats = JSON.parse(jsonValue);
@@ -572,6 +575,16 @@ const getData = async (): Promise<Stats> => {
     }
     return stats;
 };
+
+const clearData = async (setStats: React.Dispatch<React.SetStateAction<Stats>>) => {
+    try {
+        setStats([])
+        await AsyncStorage.removeItem('stats')
+    } catch (e){
+        console.error(e)
+    }
+    console.log("Cleared statistics!")
+}
 
 //DONE Dictionary API integration (mandatory, 2pt)
 //DONE Implement word fetching
@@ -642,6 +655,14 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
     wordDetails.word = theWord;
     return wordDetails;
 }
+
+//TODO Challenges (2 pts)
+// The user picks a word from the list of eligible words (or two, for Dordle).
+// The application builds a Javascript object that represents the type of game to play and the word or words to guess (this depends on how your application works)
+// This object is converted to a string url, and encoded as a QRCode, for instance using this package: https://www.npmjs.com/package/react-native-qrcode-svg
+// The QR Code is displayed on screen, a second user can scan it with their phone camera
+// This opens the application on the other phone, which receives the data, creates the game, and starts it
+// If the game is won, the user gets the option to issue a challenge back
 
 const styles = StyleSheet.create({
   container: {
