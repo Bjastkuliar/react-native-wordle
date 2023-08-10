@@ -22,11 +22,13 @@ import {
     Wordle
 } from './wordle';
 import React, {useEffect, useState} from 'react';
-import {Button, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Button, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View, Modal} from 'react-native';
 import Constants from 'expo-constants';
 import {Card} from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+import QRCode from 'qrcode';
+import {SvgXml} from 'react-native-svg';
 
 // one change is that we do not use files for reading the words anymore, for simplicity
 // the resources are defined in TypeScript modules
@@ -42,7 +44,13 @@ interface FetchedWord {
     example: string|null
 }
 
+interface WordleChallenge {
+    wordles: Wordle[],
+    wordleDetails: FetchedWord[]
+}
+
 const WORDNIK_API_KEY: string = "uoqnv60vosqot1gurgcgln5e31u3qfaq8qfczhlplgg8g9v3h";
+const INIT = "Random"
 
 //DONE Sharing (1 pts)
 const onShare = async () => {
@@ -281,8 +289,8 @@ type Stats = {game: string, attempts: number}[]
 // also, the format of the statistics changes a bit, since we need to store the type as well
 // otherwise we would mix wordle and dordle statistics
 const Settings = ({onStart, statistics,onWordsFetched,setStats}:{onStart: MultiWordleCallback, statistics: Stats,onWordsFetched:React.Dispatch<React.SetStateAction<FetchedWord[]>>,setStats:React.Dispatch<React.SetStateAction<Stats>>}) => {
-  const init = "Random"
-  const [words, setWords] = useState<string[]>([init]);
+
+  const [words, setWords] = useState<string[]>([INIT]);
 
   const selectWord = (word: string, index: number) => {
     let newWords = [...words]
@@ -292,7 +300,7 @@ const Settings = ({onStart, statistics,onWordsFetched,setStats}:{onStart: MultiW
 
   //Initialises the game(s) with one or more random answers
   const startGame = () => {
-      const gameAnswers:string[] = words.map(word =>  word===init?randomWord(answers):word)
+      const gameAnswers:string[] = words.map(word =>  word===INIT?randomWord(answers):word)
       fetchWords(gameAnswers).then(fetchedWords => onWordsFetched(fetchedWords))
       console.log("Game answers: "+gameAnswers)
 
@@ -314,21 +322,21 @@ const Settings = ({onStart, statistics,onWordsFetched,setStats}:{onStart: MultiW
     onStart(games)
   }
 
-  const addGame = () => setWords([...words, init])
+  const addGame = () => setWords([...words, INIT])
   const removeGame = () => setWords(words.slice(0,-1))
   const gameType = gameName(words)
   const gameStats = statistics.filter(st => st.game === gameType).map(st => st.attempts)
 
-    //TODO add challenge screen here
   return (
   <ScrollView style={styles.container} contentContainerStyle={{justifyContent: 'center'}} >
     <Card style={styles.card}>
         <Text style={styles.paragraph}>{gameType} Settings</Text>
-        {words.map((word, index) => <WordleSettings init={init} gameIndex={index} list={answers} onSelect={selectWord} key={"game_"+index}/> )}
+        {words.map((word, index) => <WordleSettings init={INIT} gameIndex={index} list={answers} onSelect={selectWord} key={"game_"+index}/> )}
         <Button title="Add game" onPress={addGame} />
         <Button title="Remove game" onPress={removeGame} disabled={words.length <= 1}/>
         <Button title="Start" onPress={startGame} />
     </Card>
+    <ChallengeSettings/>
     <Card style={styles.card}>
         <Button title={"Clear Statistics"} onPress={()=> clearData(setStats)}/>
         <Text style={styles.paragraph}>{gameType} Statistics</Text>
@@ -657,12 +665,84 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
 }
 
 //TODO Challenges (2 pts)
-// The user picks a word from the list of eligible words (or two, for Dordle).
-// The application builds a Javascript object that represents the type of game to play and the word or words to guess (this depends on how your application works)
-// This object is converted to a string url, and encoded as a QRCode, for instance using this package: https://www.npmjs.com/package/react-native-qrcode-svg
-// The QR Code is displayed on screen, a second user can scan it with their phone camera
-// This opens the application on the other phone, which receives the data, creates the game, and starts it
+//The user picks a word from the list of eligible words (or two, for Dordle).
+//The application builds a Javascript object that represents the type of game to play and the word or words to guess (this depends on how your application works)
+//This object is converted to a string url, and encoded as a QRCode, for instance using this package: https://www.npmjs.com/package/react-native-qrcode-svg
+//The QR Code is displayed on screen, a second user can scan it with their phone camera
+//TODO This opens the application on the other phone, which receives the data, creates the game, and starts it
 // If the game is won, the user gets the option to issue a challenge back
+const ChallengeSettings = () => {
+    const [challengeWords, setChallengeWords] = useState<string[]>([INIT]);
+    const [fetchedChallenges, setFetchedChallenges] = useState<FetchedWord[]>([])
+    const[challenge, addChallenge] = useState<string>("");
+    const addGame = () => setChallengeWords([...challengeWords, INIT])
+    const removeGame = () => setChallengeWords(challengeWords.slice(0,-1))
+    const selectWord = (word: string, index: number) => {
+        let newWords = [...challengeWords]
+        newWords[index] = word
+        setChallengeWords(newWords)
+    }
+    const setChallenge = () => {
+        const gameAnswers:string[] = challengeWords.map(word =>  word===INIT?randomWord(answers):word)
+        fetchWords(gameAnswers).then(fetchedWords => setFetchedChallenges(fetchedWords))
+        console.log("Challenge(s) answers: "+gameAnswers)
+
+        //TODO Note: max challenge attempts here
+        const attempts = 5 + gameAnswers.length
+        const games: Wordle[] = gameAnswers.map(answer =>
+            (
+                {
+                    guesses: [],
+                    answer: answer,
+                    words: [],
+                    valid_words: [],
+                    maxGuesses: attempts,
+                    mode: "easy",
+                    statistics:[]
+                }
+            )
+        )
+        const challengeObject : WordleChallenge = {
+            wordles: games,
+            wordleDetails: fetchedChallenges
+        }
+        sendChallenge(JSON.stringify(challengeObject),addChallenge)
+    }
+
+    return (
+        <Card style={styles.card}>
+            <Text style={[styles.paragraph]}>Challenge setup</Text>
+            {challengeWords.map((word, index) => <WordleSettings init={INIT} gameIndex={index} list={answers} onSelect={selectWord} key={"game_"+index}/> )}
+            <Button title="Add game" onPress={addGame} />
+            <Button title="Remove game" onPress={removeGame} disabled={challengeWords.length <= 1}/>
+            {challenge==""?<Button title={"Challenge!"} onPress={setChallenge}/>:
+                <Modal style={styles.modalView} animationType={"fade"} onRequestClose={() => addChallenge("")}>
+                    <View style={styles.column}>
+                        <View style={styles.centeredView}>
+                            <SvgXml xml={challenge} width="90%" height="90%" />
+                            <Button title={"Back to the App"} onPress={() => addChallenge("")}/>
+                        </View>
+
+                    </View>
+                </Modal>
+            }
+        </Card>
+    )
+}
+
+function sendChallenge(challengeObject: string, setQR: React.Dispatch<React.SetStateAction<string>>) {
+    const link = "wordle://"+ JSON.stringify(challengeObject)
+    console.log(link)
+
+    QRCode.toString(link, {type: 'svg' /* other options */ })
+        .then(setQR)
+        .catch(() => {
+            console.error('Unable to render SVG Code');
+            // Do something with the error
+        });
+}
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -675,6 +755,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center"
   },
+    column: {
+      flexDirection:"column",
+        justifyContent: "center"
+    },
   centered: {
     justifyContent: "center",
   },
@@ -750,7 +834,27 @@ const styles = StyleSheet.create({
     height: '100%'
   },
   bordered: { borderColor: "black", borderWidth: 1 },
-  textField: {width: 80}
+  textField: {width: 80},
+    centeredView: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginVertical: 22,
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 35,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    }
 });
 
 
