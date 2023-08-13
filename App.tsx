@@ -27,8 +27,10 @@ import Constants from 'expo-constants';
 import {Card} from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+// @ts-ignore
 import QRCode from 'qrcode';
 import {SvgXml} from 'react-native-svg';
+import * as QueryString from "querystring";
 
 // one change is that we do not use files for reading the words anymore, for simplicity
 // the resources are defined in TypeScript modules
@@ -731,7 +733,11 @@ const ChallengeSettings = () => {
 }
 
 function sendChallenge(challengeObject: string, setQR: React.Dispatch<React.SetStateAction<string>>) {
-    const link = "wordle://"+ JSON.stringify(challengeObject)
+
+    const link = Linking.createURL("",{
+        scheme: "wordle",
+        queryParams : {challengeObject : challengeObject}
+    })
     console.log(link)
 
     QRCode.toString(link, {type: 'svg' /* other options */ })
