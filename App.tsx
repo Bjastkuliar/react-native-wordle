@@ -22,7 +22,7 @@ import {
     Wordle
 } from './wordle';
 import React, {useEffect, useState} from 'react';
-import {Button, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View, Modal} from 'react-native';
+import {Button, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View} from 'react-native';
 import Constants from 'expo-constants';
 import {Card} from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,7 +30,6 @@ import * as Linking from 'expo-linking';
 // @ts-ignore
 import QRCode from 'qrcode';
 import {SvgXml} from 'react-native-svg';
-import * as QueryString from "querystring";
 
 // one change is that we do not use files for reading the words anymore, for simplicity
 // the resources are defined in TypeScript modules
@@ -502,7 +501,14 @@ const App = () => {
   const [games, setGames] = useState<Wordle[]>([]);
   const [fetchedWords, onWordsFetched] = useState<FetchedWord[]>([]);
   const [stats, setStats] = useState<Stats>([]);
+  const [initialUrl, setInitialUrl] = useState<string|null>(null);
 
+  if(initialUrl==null){
+      getInitialUrl(setInitialUrl, setGames, onWordsFetched)
+  } else {
+      console.log("Initial url already set!")
+  }
+  //initialUrl==null?getInitialUrl(setInitialUrl):console.log("Initial URL already set")
     //DONE Persistence (1 pts)
     /*The use effect hook is updating the statistics only once at application startup*/
   useEffect(()=>{
@@ -511,13 +517,17 @@ const App = () => {
       });
   },[]);
 
+  useEffect(() => {
+    setData(stats).then(()=> console.log("Updated statistics with last game."));
+  },[stats]);
+
   const startPlaying = (games: Wordle[]) => {
     setGames(games)
   }
 
   const stopPlaying = () => {
       setGames([])
-      setData(stats).then(()=> console.log("Updated statistics with last game."));
+      //setData(stats).then(()=> console.log("Updated statistics with last game."));
   }
 
   const getStats = (games: Wordle[]) => {
@@ -532,6 +542,10 @@ const App = () => {
       }
       stopPlaying();
   }
+
+
+
+
 
   return (
         games.length===0?
@@ -655,6 +669,7 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
 
         definitionIndex++
     }
+    wordDetails.word = theWord;
     wordDetails.definition=responseJson[maxScoreIndex].text;
     wordDetails.partOfSpeech=responseJson[maxScoreIndex].partOfSpeech;
     wordDetails.example=responseJson[maxScoreIndex].example;
@@ -662,7 +677,6 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
     console.log("PartOfSpeech: "+wordDetails.partOfSpeech)
     console.log("Definition: "+wordDetails.definition)
     console.log("Example: "+wordDetails.example)
-    wordDetails.word = theWord;
     return wordDetails;
 }
 
@@ -671,8 +685,8 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
 //The application builds a Javascript object that represents the type of game to play and the word or words to guess (this depends on how your application works)
 //This object is converted to a string url, and encoded as a QRCode, for instance using this package: https://www.npmjs.com/package/react-native-qrcode-svg
 //The QR Code is displayed on screen, a second user can scan it with their phone camera
-//TODO This opens the application on the other phone, which receives the data, creates the game, and starts it
-// If the game is won, the user gets the option to issue a challenge back
+//This opens the application on the other phone, which receives the data, creates the game, and starts it
+//TODO If the game is won, the user gets the option to issue a challenge back
 const ChallengeSettings = () => {
     const [challengeWords, setChallengeWords] = useState<string[]>([INIT]);
     const [fetchedChallenges, setFetchedChallenges] = useState<FetchedWord[]>([])
@@ -748,6 +762,40 @@ function sendChallenge(challengeObject: string, setQR: React.Dispatch<React.SetS
         });
 }
 
+function receiveChallenge(url: string): WordleChallenge{
+    const parsedURL = Linking.parse(url);
+    let challengeObject:WordleChallenge= {
+        wordles : [],
+        wordleDetails : []
+    };
+    if(parsedURL.queryParams!=null){
+        const challengeTmp: WordleChallenge = JSON.parse(parsedURL.queryParams.challengeObject as string);
+
+        //needed because the received object does not hold the answer/valid words list
+        challengeObject.wordles = challengeTmp.wordles.map(wordle => ({
+            guesses: wordle.guesses,
+            answer: wordle.answer,
+            words: answers,
+            valid_words: allwords,
+            maxGuesses: wordle.maxGuesses,
+            mode: wordle.mode,
+            statistics: wordle.statistics
+        }))
+    }
+    return challengeObject;
+}
+
+function getInitialUrl(setInitialUrl : React.Dispatch<React.SetStateAction<string|null>>, setGames: React.Dispatch<React.SetStateAction<Wordle[]>>, onWordsFetched: React.Dispatch<React.SetStateAction<FetchedWord[]>>){
+    Linking.getInitialURL().then(url => {
+        console.log("Entered the app via URL: "+ url)
+        setInitialUrl(url)
+        if(url!=null){
+            const challengeObject = receiveChallenge(url)
+            setGames(challengeObject.wordles)
+            onWordsFetched(challengeObject.wordleDetails)
+        }
+    })
+}
 
 
 const styles = StyleSheet.create({
