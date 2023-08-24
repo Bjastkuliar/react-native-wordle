@@ -50,8 +50,8 @@ const MAX_ATTEMPTS: number = 10;
 const MAX_DORDLE_LENGTH: number = 8;
 const STRING_PLACEHOLDER: string = "[BLANK]"
 const SAMPLE_WORD = {
-    id:-1,
-    word :"random"
+    id: -1,
+    word: "random"
 };
 
 //DONE Sharing (1 pts)
@@ -108,7 +108,7 @@ const BoardRow = ({letters}: { letters: LetterGuess[] }) => (
     <View style={styles.row}>{letters.map(l => <BoardLetter guess={l} key={"board_letter_" + board_key++}/>)}</View>
 )
 
-const Board = ({game, guess}: { game: Wordle, guess: string}) => {
+const Board = ({game, guess}: { game: Wordle, guess: string }) => {
     //The list holding all the present guesses
     const guesses = game.guesses.map((guess: string) =>
         rateGuesses(guess, game.answer.toUpperCase()))
@@ -116,7 +116,7 @@ const Board = ({game, guess}: { game: Wordle, guess: string}) => {
     const filled: LetterGuess[] = [...guess, ...(new Array(game.answer.length - guess.length)).fill(" ")].map((char, idx) =>
         ({letter: {character: char, index: idx}, kind: "untried"}))
     //The list holding the empty rows of the board
-    const empties = fillGuesses([], game.maxGuesses - game.guesses.length - 1,game.answer.length).map((guess: string) =>
+    const empties = fillGuesses([], game.maxGuesses - game.guesses.length - 1, game.answer.length).map((guess: string) =>
         stringToWord(guess).map((l: Letter): LetterGuess => ({letter: l, kind: 'untried'})))
     const allGuesses: LetterGuess[][] = (guesses.length >= game.maxGuesses) ? guesses : [...guesses, filled, ...empties]
 
@@ -309,11 +309,12 @@ type Stats = { game: string, attempts: number }[]
 // the callback of the settings changes, since it needs to be able to handle multiple games
 // also, the format of the statistics changes a bit, since we need to store the type as well
 // otherwise we would mix wordle and dordle statistics
-const Settings = ({onStart, statistics, onWordsFetched, setStats}: {
+const Settings = ({onStart, statistics, onWordsFetched, setStats, setWOTDStatus}: {
     onStart: MultiWordleCallback,
     statistics: Stats,
     onWordsFetched: React.Dispatch<React.SetStateAction<FetchedWord[]>>,
-    setStats: React.Dispatch<React.SetStateAction<Stats>>
+    setStats: React.Dispatch<React.SetStateAction<Stats>>,
+    setWOTDStatus: React.Dispatch<React.SetStateAction<number>>
 }) => {
 
     const [words, setWords] = useState<string[]>([INIT]);
@@ -326,7 +327,7 @@ const Settings = ({onStart, statistics, onWordsFetched, setStats}: {
 
     //Initialises the game(s) with one or more random answers
     const startGame = () => {
-        fetchRandomWords(words).then(games=> {
+        fetchRandomWords(words).then(games => {
             const gameAnswers: string[] = games.map(wordle => wordle.answer)
             console.log("Game answers: " + gameAnswers)
             fetchWords(gameAnswers).then(fetchedWords => onWordsFetched(fetchedWords))
@@ -338,7 +339,7 @@ const Settings = ({onStart, statistics, onWordsFetched, setStats}: {
     const removeGame = () => setWords(words.slice(0, -1))
     const gameType = gameName(words)
     const gameStats = statistics.filter(st => st.game === gameType).map(st => st.attempts)
-
+    //TODO Fix scrollview IMPORTANT
     return (
         <ScrollView style={styles.container} contentContainerStyle={{justifyContent: 'center'}}>
             <Card style={styles.card}>
@@ -348,7 +349,7 @@ const Settings = ({onStart, statistics, onWordsFetched, setStats}: {
                 <Button title="Add game" onPress={addGame}/>
                 <Button title="Remove game" onPress={removeGame} disabled={words.length <= 1}/>
                 <Button title="Start" onPress={startGame}/>
-                <WordOfTheDay onStart={onStart} wordDetails={onWordsFetched}/>
+                <WordOfTheDay onStart={onStart} wordDetails={onWordsFetched} setWOTDStatus={setWOTDStatus}/>
             </Card>
             <ChallengeSettings/>
             <Card style={styles.card}>
@@ -382,19 +383,18 @@ const gameName = (games: string[] | Wordle[]): string => {
 // each column can contain multiple games
 // layout has special cases for one game only, or for an uneven amount of games
 // we need to make sure that we can scroll, otherwise if you have too many games, you don't see anything
-const MultiWordleGame = ({startGames, onBack, wordDetails, challengeStatus, changeChallengeStatus}: {
+const MultiWordleGame = ({startGames, onBack, wordDetails, challengeStatus}: {
     startGames: Wordle[],
     onBack: MultiWordleCallback,
     wordDetails: FetchedWord[],
-    challengeStatus: number,
-    changeChallengeStatus : React.Dispatch<React.SetStateAction<number>>
+    challengeStatus: number
 }) => {
     const [guess, setGuess] = useState<string>("");
     const [games, setGames] = useState<Wordle[]>(startGames);
     const [msgBox, updateMessage] = useState<string>("");
     const enterValid = () => {
-        wordnikValid(guess).then(isValid=> {
-            if(isValid){
+        wordnikValid(guess).then(isValid => {
+            if (isValid) {
                 addGuess()
             } else {
                 updateMessage("The guess you entered is not valid!")
@@ -432,9 +432,6 @@ const MultiWordleGame = ({startGames, onBack, wordDetails, challengeStatus, chan
                 wordDetails.forEach(word => {
                     msg_to_display += word.definition + "\n"
                 })
-                if (challengeStatus==1) {
-                    changeChallengeStatus(2)
-                }
                 break;
             }
             case "lost": {
@@ -449,9 +446,6 @@ const MultiWordleGame = ({startGames, onBack, wordDetails, challengeStatus, chan
                     })
                     msg_to_display += word + ": " + definition + "\n"
                 })
-                if(challengeStatus==1){
-                    changeChallengeStatus(3)
-                }
                 break;
             }
             default: {
@@ -473,7 +467,7 @@ const MultiWordleGame = ({startGames, onBack, wordDetails, challengeStatus, chan
             msg += "Desperate clues: \n"
             for (let i = 0; i < wordDetails.length; i++) {
                 if (wordDetails[i].example != undefined) {
-                    msg += "Word " + i + 1 + " :" + wordDetails[i].example + "\n"
+                    msg += "Word " + i + 1 + " :" + wordDetails[i].example?.replace(wordDetails[i].word, STRING_PLACEHOLDER) + "\n"
                 } else {
                     console.log("Example for word " + i + " is unavailable!");
                 }
@@ -490,19 +484,20 @@ const MultiWordleGame = ({startGames, onBack, wordDetails, challengeStatus, chan
         }
         updateMessage(msg)
     }
+
     //TODO condition gets updated only upon clicking the clue button?
-    function disableDesperateClue():boolean{
-        const exampleAvailable = wordDetails.every(detail => detail.example!=undefined);
-        const isLastTurn = games.every(game => game.guesses.length>=game.maxGuesses-1);
+    function disableDesperateClue(): boolean {
+        const exampleAvailable = wordDetails.every(detail => detail.example != undefined);
+        const isLastTurn = games.every(game => game.guesses.length >= game.maxGuesses - 1);
         //console.log("is last turn? "+isLastTurn+"\nexample available?"+ exampleAvailable)
         return !exampleAvailable && !isLastTurn;
     }
-
+    //TODO Fix scrollview IMPORTANT
     return (
         <View style={styles.container}>
             <Text style={styles.paragraph}>{gameName(games)}</Text>
             <Text style={styles.paragraph}>{message()}</Text>
-            {challengeStatus!=2?<View>
+            {challengeStatus != 2 ? <View>
                 <ScrollView>
                     <Card style={styles.card}>
                         <View style={styles.row}>
@@ -523,12 +518,14 @@ const MultiWordleGame = ({startGames, onBack, wordDetails, challengeStatus, chan
                 <Card style={styles.card}>
                     <View style={[styles.row, styles.centered]}>
                         <Button title={"clue"} onPress={() => displayClues(false)}/>
-                        <Button title={"Desperate clue"} onPress={() => displayClues(true)} disabled={disableDesperateClue()}/>
+                        <Button title={"Desperate clue"} onPress={() => displayClues(true)}
+                                disabled={disableDesperateClue()}/>
                     </View>
-                    <KeyBoard games={games} valid={guess.length>=5} empty={guess === ""} onPress={keyPress} onDelete={backspace}
+                    <KeyBoard games={games} valid={guess.length >= 5} empty={guess === ""} onPress={keyPress}
+                              onDelete={backspace}
                               onEnter={enterValid}/>
                 </Card>
-            </View>:<ChallengeSettings isChallengeBack={true}/>}
+            </View> : <ChallengeSettings isChallengeBack={true}/>}
             <Button title="back" onPress={() => onBack(games)}/>
         </View>
     )
@@ -540,16 +537,24 @@ const App = () => {
     const [fetchedWords, onWordsFetched] = useState<FetchedWord[]>([]);
     const [stats, setStats] = useState<Stats>([]);
 
-    /*expresses three different statuses for a challenge:
-    * - 0: game is not a challenge (will not issue the "challenge back" on win)
-    * - 1: game is a challenge in progress
-    * - 2: game is a won challenge
-    * - 3: game is a challenge but is lost
-    * not all statuses are actually used, but they may be useful in case of a future implementation*/
-    const [challengeStatus, onBeingChallenge] = useState<number>(0);
+    /**expresses three different statuses for a challenge:
+     * - 0: game is not a challenge (will not issue the "challenge back" on win)
+     * - 1: game is a challenge in progress
+     * - 2: game is a won challenge
+     * - 3: game is a challenge but is lost
+     * not all statuses are actually used, but they may be useful in case of a future implementation*/
+    const [challengeStatus, setChallengeStatus] = useState<number>(0);
 
+    /**specifies whether the game is a word of the day or not and which status it is if so,
+     similar to the challengeStatus hook, is mainly used for updating the stored date (and thus disabling the WordOfTheDay
+     button:
+     * - 0: game is not a WOTD(Word Of The Day)
+     * - 1: game is a WOTD in progress
+     * - 2: game is a won WOTD (issue the date update)
+     * - 3: game is a WOTD but is lost (issue the date update)
+     * not all statuses are actually used, but they may be useful in case of a future implementation*/
+    const [WOTDStatus, setWOTDStatus] = useState<number>(0)
 
-    //initialUrl==null?getInitialUrl(setInitialUrl):console.log("Initial URL already set")
     //DONE Persistence (1 pts)
     /*The use effect hook is updating the statistics only once at application startup*/
     useEffect(() => {
@@ -562,9 +567,9 @@ const App = () => {
             if (url != null) {
                 const challengeWordles: Wordle[] | null = receiveChallenge(url)
                 if (challengeWordles != null) {
-                    onBeingChallenge(1)
+                    setChallengeStatus(1)
                     setGames(challengeWordles)
-                    fetchWords(challengeWordles.map(wordle=>wordle.answer)).then(fetchedDetails => onWordsFetched(fetchedDetails))
+                    fetchWords(challengeWordles.map(wordle => wordle.answer)).then(fetchedDetails => onWordsFetched(fetchedDetails))
                 }
             }
         }).catch(error => console.log("Something went wrong while reading the initial URL! :" + error))
@@ -580,7 +585,7 @@ const App = () => {
 
     const stopPlaying = () => {
         setGames([])
-        onBeingChallenge(0)
+        setChallengeStatus(0)
     }
 
     const getStats = (games: Wordle[]) => {
@@ -593,9 +598,23 @@ const App = () => {
                 break;
             case "lost":
                 setStats([...stats, {game, attempts: 0}]);
+                if (challengeStatus == 1) {
+                    setChallengeStatus(3)
+                }
+                if (WOTDStatus == 1) {
+                    setWOTDStatus(3)
+                    updateDate()
+                }
                 break;
             case "win":
                 setStats([...stats, {game, attempts}]);
+                if (challengeStatus == 1) {
+                    setChallengeStatus(2)
+                }
+                if (WOTDStatus == 1) {
+                    setWOTDStatus(2)
+                    updateDate()
+                }
                 break;
         }
         stopPlaying();
@@ -604,8 +623,10 @@ const App = () => {
 
     return (
         games.length === 0 ?
-            <Settings onStart={startPlaying} statistics={stats} onWordsFetched={onWordsFetched} setStats={setStats}/> :
-            <MultiWordleGame onBack={getStats} startGames={games} wordDetails={fetchedWords} challengeStatus={challengeStatus} changeChallengeStatus={onBeingChallenge}/>
+            <Settings onStart={startPlaying} statistics={stats} onWordsFetched={onWordsFetched} setStats={setStats}
+                      setWOTDStatus={setWOTDStatus}/> :
+            <MultiWordleGame onBack={getStats} startGames={games} wordDetails={fetchedWords}
+                             challengeStatus={challengeStatus}/>
     )
 }
 
@@ -618,11 +639,11 @@ export default App
 //DONE Sharing (1 pts)
 //Haptics (1 pts)
 //DONE Challenges (2 pts)
-//TODO Advanced Dictionary integration (2 pts)
+//DONE Advanced Dictionary integration (2 pts)
 //TODO Dordle: eternal edition (2 pts)
 //Advanced challenges (4 pts, for ambitious students!)
 
-//TOTAL COUNT OF CURRENT POINTS: 6 / 10
+//TOTAL COUNT OF CURRENT POINTS: 8 / 10
 
 //DONE Persistence (1 pts)
 /**Saves the provided data in AsyncStorage.
@@ -644,7 +665,7 @@ const setStatistics = async (data: Stats) => {
 };
 
 const getStatistics = async (): Promise<Stats> => {
-    let data : Stats = []
+    let data: Stats = []
     try {
         const jsonValue = await AsyncStorage.getItem("stats");
         if (jsonValue == null) {
@@ -730,6 +751,7 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
 
         definitionIndex++
     }
+    //TODO parse out xml/html tags from text
     wordDetails.word = theWord;
     wordDetails.definition = responseJson[maxScoreIndex].text;
     wordDetails.partOfSpeech = responseJson[maxScoreIndex].partOfSpeech;
@@ -748,7 +770,7 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
 //The QR Code is displayed on screen, a second user can scan it with their phone camera
 //This opens the application on the other phone, which receives the data, creates the game, and starts it
 //DONE If the game is won, the user gets the option to issue a challenge back
-const ChallengeSettings = ({isChallengeBack} : {isChallengeBack? :boolean}) => {
+const ChallengeSettings = ({isChallengeBack}: { isChallengeBack?: boolean }) => {
     const [challengeWords, setChallengeWords] = useState<string[]>([INIT]);
     const [challenge, addChallenge] = useState<string>("");
     const addGame = () => setChallengeWords([...challengeWords, INIT])
@@ -780,12 +802,14 @@ const ChallengeSettings = ({isChallengeBack} : {isChallengeBack? :boolean}) => {
 
     return (
         <Card style={styles.card}>
-            <Text style={[styles.paragraph]}>{isChallengeBack?"Challenge Back Your opponent":"Challenge setup"}</Text>
+            <Text
+                style={[styles.paragraph]}>{isChallengeBack ? "Challenge Back Your opponent" : "Challenge setup"}</Text>
             {challengeWords.map((word, index) => <WordleSettings init={INIT} gameIndex={index} list={answers}
                                                                  onSelect={selectWord} key={"game_" + index}/>)}
             <Button title="Add game" onPress={addGame}/>
             <Button title="Remove game" onPress={removeGame} disabled={challengeWords.length <= 1}/>
-            {challenge == "" ? <Button title={isChallengeBack?"Challenge back!":"Challenge!"} onPress={setChallenge}/> :
+            {challenge == "" ?
+                <Button title={isChallengeBack ? "Challenge back!" : "Challenge!"} onPress={setChallenge}/> :
                 <Modal style={styles.modalView} animationType={"fade"} onRequestClose={() => addChallenge("")}>
                     <View style={styles.column}>
                         <View style={styles.centeredView}>
@@ -824,7 +848,7 @@ function receiveChallenge(url: string): Wordle[] | null {
         let challengeTmp: Wordle[] | null = null
         try {
             challengeTmp = JSON.parse(parsedURL.queryParams.wordles as string);
-            console.log("ChallengeTmp: "+JSON.stringify(challengeTmp))
+            console.log("ChallengeTmp: " + JSON.stringify(challengeTmp))
         } catch (e) {
             console.log(e)
         }
@@ -832,7 +856,7 @@ function receiveChallenge(url: string): Wordle[] | null {
             return null
         }
 
-        console.log("Loading challenge with words: "+JSON.stringify(challengeWordles))
+        console.log("Loading challenge with words: " + JSON.stringify(challengeWordles))
 
         //needed because the received object does not hold the answer/valid words list
         challengeWordles = challengeTmp.map(wordle => ({
@@ -848,8 +872,8 @@ function receiveChallenge(url: string): Wordle[] | null {
     return challengeWordles;
 }
 
-//TODO Advanced Dictionary integration (2 pts)
-//The word to guess is either a random word of a minimum length of 5 (but can be longer) //TODO or the "Word of the day".
+//DONE Advanced Dictionary integration (2 pts)
+//The word to guess is either a random word of a minimum length of 5 (but can be longer) or the "Word of the day".
 //If a random word has characters that are not on the keyboard (e.g., dashes, accented characters), then it is discarded and a new word is selected.
 //The game supports words that are longer than 5 character.
 //Longer words are allowed more guesses: the number of guesses is equal to the number of letters plus 1, with a maximum of 10 for a single word.
@@ -862,12 +886,12 @@ function receiveChallenge(url: string): Wordle[] | null {
  *
  * @param word the word too look for*/
 async function wordnikValid(word: string): Promise<boolean> {
-    const request = "https://api.wordnik.com/v4/word.json/"+word.toLowerCase()+"/definitions?limit=200&includeRelated=false&sourceDictionaries=all&useCanonical=false&includeTags=false&api_key="+WORDNIK_API_KEY
+    const request = "https://api.wordnik.com/v4/word.json/" + word.toLowerCase() + "/definitions?limit=200&includeRelated=false&sourceDictionaries=all&useCanonical=false&includeTags=false&api_key=" + WORDNIK_API_KEY
     const response = await fetch(request);
     const data = await response.json();
     let index = 0;
-    while(data[index]!=undefined){
-        if(data[index].text!= undefined){
+    while (data[index] != undefined) {
+        if (data[index].text != undefined) {
             return true;
         }
         index++;
@@ -876,18 +900,18 @@ async function wordnikValid(word: string): Promise<boolean> {
 }
 
 //Queries Wordnik for a random word, returns null if it fails to retrieve a word
-async function wordnikRandom(dordle?:boolean):Promise<string|null>{
-    const request = dordle? "https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minLength="+MIN_LENGTH+"&maxLength="+MAX_DORDLE_LENGTH+"&api_key="+WORDNIK_API_KEY:
-        "https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minLength="+MIN_LENGTH+"&api_key="+WORDNIK_API_KEY
+async function wordnikRandom(dordle?: boolean): Promise<string | null> {
+    const request = dordle ? "https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minLength=" + MIN_LENGTH + "&maxLength=" + MAX_DORDLE_LENGTH + "&api_key=" + WORDNIK_API_KEY :
+        "https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minLength=" + MIN_LENGTH + "&api_key=" + WORDNIK_API_KEY
     const response = await fetch(request)
     const data = await response.json()
-    if(data.message != undefined){
+    if (data.message != undefined) {
         console.warn("API rate exceeded!")
         return null
     }
-    if(data.word!=undefined){
+    if (data.word != undefined) {
         //TODO does not exclude words with hyphens
-        if(data.word.match("[a-zA-Z]")){//word does not contain invalid characters
+        if (data.word.match("[a-zA-Z]")) {//word does not contain invalid characters
             return data.word
         } else {//retry with a different word
             return wordnikRandom()
@@ -904,33 +928,35 @@ async function wordnikRandom(dordle?:boolean):Promise<string|null>{
  * @param date the date for selecting which Word of the day to use
  * @returns FetchedWord if the word is composed only of normal characters*/
 //TODO fix date mismatch, disable button only on win/loss of the game
-async function wordnikWordOfTheDay(date: string): Promise<FetchedWord|null>{
+async function wordnikWordOfTheDay(date: string): Promise<FetchedWord | null> {
     let wordDetails: FetchedWord = {
-        word : "",
+        word: "",
         partOfSpeech: "",
-        definition : "",
-        example : null
+        definition: "",
+        example: null
     }
-    const request = "https://api.wordnik.com/v4/words.json/wordOfTheDay?date="+date+"&api_key="+WORDNIK_API_KEY
+    const request = "https://api.wordnik.com/v4/words.json/wordOfTheDay?date=" + date + "&api_key=" + WORDNIK_API_KEY
     const response = await fetch(request)
     const data = await response.json()
-    console.log("Wordnik wordOfTheDay: "+JSON.stringify(data))
-    if(!data.word.match("[a-zA-Z]")){//word contains illegal characters
+    if (!data.word.match("[a-zA-Z]")) {//word contains illegal characters
         return null
     } else {
         wordDetails.word = data.word;
         wordDetails.definition = data.definitions[0].text
         wordDetails.partOfSpeech = data.definitions[0].partOfSpeech
-        if(data.examples[0]!=undefined){
-            wordDetails.example = data.examples[0].text.replace(wordDetails.word,STRING_PLACEHOLDER)
+        if (data.examples[0] != undefined) {
+            wordDetails.example = data.examples[0].text.replace(wordDetails.word, STRING_PLACEHOLDER)
         }
-        console.log("Word of the day details: "+JSON.stringify(wordDetails))
         return wordDetails;
     }
 }
 
-//TODO word of the day should check only today's date. If one has already played today's game then disable the button
-const WordOfTheDay = ({onStart,wordDetails}:{onStart: MultiWordleCallback,wordDetails: React.Dispatch<React.SetStateAction<FetchedWord[]>>}) => {
+//TODO maybe store the word of the day, so that the user can back in and out without having to wait for querying wordnik?
+const WordOfTheDay = ({onStart, wordDetails,setWOTDStatus}: {
+    onStart: MultiWordleCallback,
+    wordDetails: React.Dispatch<React.SetStateAction<FetchedWord[]>>,
+    setWOTDStatus: React.Dispatch<React.SetStateAction<number>>
+}) => {
     const [todayDate, setTodayDate] = useState<string>("");
     const [playable, updatePlayableStatus] = useState<boolean>(false);
     useEffect(() => {
@@ -941,36 +967,37 @@ const WordOfTheDay = ({onStart,wordDetails}:{onStart: MultiWordleCallback,wordDe
     }, []);
     const startTodayGame = () => {
         wordnikWordOfTheDay(todayDate).then(maybeWordDetails => {
-            if(maybeWordDetails!=null){
-                const game : Wordle = {
+            if (maybeWordDetails != null) {
+                const game: Wordle = {
                     guesses: [],
-                    answer: maybeWordDetails.word,
-                    words: answers,
-                    valid_words: allwords,
+                    answer: maybeWordDetails.word.toUpperCase(),
+                    words: [],
+                    valid_words: [],
                     maxGuesses: maxAttempts(maybeWordDetails.word),
                     mode: "easy",
                     statistics: []
                 }
+                setWOTDStatus(1);
                 wordDetails([maybeWordDetails])
                 onStart([game])
 
             } else {
                 console.log("Word of the day details are null!")
             }
-        }).catch(e=> console.log("Error while reading the word of the day!"+e))
+        }).catch(e => console.log("Error while reading the word of the day!" + e))
     }
 
     /*Checks whether the last saved date (in AsyncStorage) and today's date match or not.
 * If not then the user can attempt today's game, otherwise it means the user already played the game today.*/
-    async function checkDate(todayDate: string){
+    async function checkDate(todayDate: string) {
         let date = await getDate()
 
-        if(date == null){
+        if (date == null) {
             await setDate(todayDate)
             console.log("Saved today's date!")
             updatePlayableStatus(true)
         }
-        if(date==todayDate){
+        if (date == todayDate) {
             console.log("Dates match, game already played!")
             updatePlayableStatus(false)
         } else {
@@ -980,10 +1007,10 @@ const WordOfTheDay = ({onStart,wordDetails}:{onStart: MultiWordleCallback,wordDe
     }
 
 
-    return (<Button title={"Word of the day"} disabled={playable} onPress={startTodayGame}/>)
+    return (<Button title={"Word of the day"} disabled={!playable} onPress={startTodayGame}/>)
 }
 
-const getDate = async (): Promise<string|null> => {
+const getDate = async (): Promise<string | null> => {
     try {
         const jsonValue = await AsyncStorage.getItem("date");
         console.log("Current date: " + jsonValue)
@@ -992,7 +1019,7 @@ const getDate = async (): Promise<string|null> => {
             return null
         } else {
             console.log("Retrieved date successfully!");
-            return  jsonValue
+            return jsonValue
         }
 
     } catch (e) {
@@ -1005,25 +1032,25 @@ const getDate = async (): Promise<string|null> => {
 
 const setDate = async (date: string) => {
     try {
-        await AsyncStorage.setItem("stats", date);
-        console.log("Set statistics successfully!");
+        await AsyncStorage.setItem("date", date);
+        console.log("Set date successfully!");
     } catch (e) {
         // saving error
         console.error(e);
     }
-    console.log('updated the statistics with: ' + date);
+    console.log('updated the date with: ' + date);
 }
 
-async function fetchRandomWords(words: string[]):Promise<Wordle[]>{
+async function fetchRandomWords(words: string[]): Promise<Wordle[]> {
     const gameAnswers = words
-    while (gameAnswers.includes(INIT)){
-        const i = gameAnswers.findIndex(word => word===INIT)
+    while (gameAnswers.includes(INIT)) {
+        const i = gameAnswers.findIndex(word => word === INIT)
         const randomWord = await wordnikRandom()
-        console.log("Random Word: "+randomWord)
-        if(randomWord!=null){
-            gameAnswers.splice(i,1,randomWord)
-        } else{
-            gameAnswers.splice(i,1,SAMPLE_WORD.word)
+        console.log("Random Word: " + randomWord)
+        if (randomWord != null) {
+            gameAnswers.splice(i, 1, randomWord)
+        } else {
+            gameAnswers.splice(i, 1, SAMPLE_WORD.word)
         }
     }
 
@@ -1045,8 +1072,17 @@ async function fetchRandomWords(words: string[]):Promise<Wordle[]>{
 
 }
 
-function maxAttempts(answer:string):number{
-    return answer.length+1>MAX_ATTEMPTS?MAX_ATTEMPTS:answer.length+1
+function maxAttempts(answer: string): number {
+    return answer.length + 1 > MAX_ATTEMPTS ? MAX_ATTEMPTS : answer.length + 1
+}
+
+function updateDate() {
+    useEffect(() => {
+        let today = new Date();
+        let date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+        setDate(date).then()
+    }, []);
+
 }
 
 const styles = StyleSheet.create({
