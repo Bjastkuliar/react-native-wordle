@@ -1,0 +1,593 @@
+[
+  {
+    "id": "R5042500-1",
+    "partOfSpeech": "adjective",
+    "attributionText": "from The American Heritage® Dictionary of the English Language, 5th Edition.",
+    "sourceDictionary": "ahd-5",
+    "text": "Having no specific pattern, purpose, or objective: <i>synonym</i>: <strong> chance</strong>.",
+    "sequence": "1",
+    "score": 0,
+    "word": "random",
+    "exampleUses": [
+      {
+        "text": "random movements."
+      }
+    ],
+    "attributionUrl": "https://ahdictionary.com/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "id": "R5042500-2",
+    "partOfSpeech": "adjective",
+    "attributionText": "from The American Heritage® Dictionary of the English Language, 5th Edition.",
+    "sourceDictionary": "ahd-5",
+    "text": "Of or relating to a type of circumstance or event that is described by a probability distribution.",
+    "sequence": "2",
+    "score": 0,
+    "labels": [
+      {
+        "text": "Mathematics & Statistics",
+        "type": "fld"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "https://ahdictionary.com/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "id": "R5042500-3",
+    "partOfSpeech": "adjective",
+    "attributionText": "from The American Heritage® Dictionary of the English Language, 5th Edition.",
+    "sourceDictionary": "ahd-5",
+    "text": "Of or relating to an event in which all outcomes are equally likely, as in the testing of a blood sample for the presence of a substance.",
+    "sequence": "3",
+    "score": 0,
+    "word": "random",
+    "attributionUrl": "https://ahdictionary.com/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "id": "R5042500-4",
+    "partOfSpeech": "idiom",
+    "attributionText": "from The American Heritage® Dictionary of the English Language, 5th Edition.",
+    "sourceDictionary": "ahd-5",
+    "text": "(<em>at random</em>)  Without a governing design, method, or purpose; unsystematically.",
+    "sequence": "4",
+    "score": 0,
+    "word": "random",
+    "exampleUses": [
+      {
+        "text": "chose a card at random from the deck."
+      }
+    ],
+    "attributionUrl": "https://ahdictionary.com/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "In <em>mining</em>, the direction of a rake-vein.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "A rushing, as of a torrent; an impetuous course; impetuosity; violence; force: especially with <em>great</em>, as in the phrase <em>a great random</em>, with great speed or force.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "A rush; spurt; gush.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "A continuous flow of words; a harangue.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "An indeterminate course or proceeding; hence, lack of direction, rule, or method; haphazard; chance: used only in the phrase <em>at random</em>—that is, in a haphazard, aimless, and purely fortuitous manner.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "The distance traversed by a missile; range; reach.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "Proceeding, taken, done, or existing at random; aimless; fortuitous; haphazard; casual.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "Something done or produced without definite method, or with irregular or haphazard effect.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from The Century Dictionary.",
+    "sourceDictionary": "century",
+    "text": "In <em>dyeing</em>, clouded yarn. See <internalXref urlencoded=\"random%20yarn\">random yarn</internalXref>, under I.",
+    "word": "random",
+    "attributionUrl": "https://www.wordnik.com/colophon#century/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "Force; violence.",
+    "sequence": "1.",
+    "labels": [
+      {
+        "text": "obsolete",
+        "type": "mark"
+      }
+    ],
+    "citations": [
+      {
+        "source": "E. Hall.",
+        "cite": "For courageously the two kings newly fought with great <ex>random</ex> and force."
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "A roving motion; course without definite direction; want of direction, rule, or method; hazard; chance; -- commonly used in the phrase <ex>at random</ex>, that is, without a settled point of direction; at hazard.",
+    "sequence": "2.",
+    "citations": [
+      {
+        "source": "Herrick.",
+        "cite": "Counsels, when they fly\n<ex>At random</ex>, sometimes hit most happily."
+      },
+      {
+        "source": "Sir W. Scott.",
+        "cite": "O, many a shaft, <ex>at random</ex> sent,\nFinds mark the archer little meant!"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "Distance to which a missile is cast; range; reach.",
+    "sequence": "3.",
+    "citations": [
+      {
+        "source": "Sir K. Digby."
+      }
+    ],
+    "word": "random",
+    "exampleUses": [
+      {
+        "text": "the <ex>random</ex> of a rifle ball",
+        "position": 0
+      }
+    ],
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "noun",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "The direction of a rake-vein.",
+    "sequence": "4.",
+    "labels": [
+      {
+        "text": "(Mining)",
+        "type": "fld"
+      }
+    ],
+    "citations": [
+      {
+        "source": "Raymond."
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "Going at random or by chance; done or made at hazard, or without settled direction, aim, or purpose; hazarded without previous calculation; left to chance; haphazard.",
+    "sequence": "1.",
+    "citations": [
+      {
+        "source": "Wordsworth.",
+        "cite": "Some <ex>random</ex> truths he can impart."
+      },
+      {
+        "source": "H. Spencer.",
+        "cite": "So sharp a spur to the lazy, and so strong a bridle to the <ex>random</ex>."
+      }
+    ],
+    "word": "random",
+    "exampleUses": [
+      {
+        "text": "a <ex>random</ex> guess",
+        "position": 0
+      }
+    ],
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "of, pertaining to, or resulting from a process of selection from a starting set of items, in which the probability of selecting any one object in the starting set is equal to the probability of selecting any other.",
+    "sequence": "2.",
+    "labels": [
+      {
+        "text": "(Statistics)",
+        "type": "fld"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "of unequal size or shape; made from components of unequal size or shape.",
+    "sequence": "3.",
+    "labels": [
+      {
+        "text": "(Construction)",
+        "type": "fld"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "in a manner so that all possible results have an equal probability of occurrence; for processes, each possible result is counted separately although the same type of result may occur more than once .",
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "courses of stone of unequal thickness.",
+    "labels": [
+      {
+        "text": "(Masonry)",
+        "type": "fld"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "a shot not directed or aimed toward any particular object, or a shot with the muzzle of the gun much elevated.",
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from the GNU version of the Collaborative International Dictionary of English.",
+    "sourceDictionary": "gcide",
+    "text": "stonework consisting of stones of unequal sizes fitted together, but not in courses nor always with flat beds.",
+    "labels": [
+      {
+        "text": "(Masonry)",
+        "type": "fld"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://gcide.gnu.org.ua/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from Wiktionary, Creative Commons Attribution/Share-Alike License.",
+    "sourceDictionary": "wiktionary",
+    "text": "Having <xref>unpredictable</xref> <xref>outcomes</xref> and, in the <xref>ideal</xref> case, all outcomes <xref>equally</xref> <xref>probable</xref>; resulting from such selection; lacking <xref>statistical</xref> <xref>correlation</xref>.",
+    "word": "random",
+    "attributionUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from Wiktionary, Creative Commons Attribution/Share-Alike License.",
+    "sourceDictionary": "wiktionary",
+    "text": "Of or relating to <xref>probability distribution</xref>.",
+    "labels": [
+      {
+        "text": "mathematics",
+        "type": "field"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from Wiktionary, Creative Commons Attribution/Share-Alike License.",
+    "sourceDictionary": "wiktionary",
+    "text": "<xref>Pseudorandom</xref> in contrast to <xref>truly</xref> random; mimicking the result of random selection.",
+    "labels": [
+      {
+        "text": "computing",
+        "type": "field"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from Wiktionary, Creative Commons Attribution/Share-Alike License.",
+    "sourceDictionary": "wiktionary",
+    "text": "<xref>Representative</xref> and <xref>undistinguished</xref>; <xref>typical</xref> and <xref>average</xref>; selected for no particular reason.",
+    "word": "random",
+    "attributionUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from Wiktionary, Creative Commons Attribution/Share-Alike License.",
+    "sourceDictionary": "wiktionary",
+    "text": "<xref>Apropos</xref> of nothing; lacking <xref>context</xref>; <xref>unexpected</xref>; having apparent lack of plan, cause, or reason.",
+    "word": "random",
+    "attributionUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from Wiktionary, Creative Commons Attribution/Share-Alike License.",
+    "sourceDictionary": "wiktionary",
+    "text": "Characterized by or often saying random things; habitually using <xref>non sequiturs</xref>.",
+    "labels": [
+      {
+        "text": "colloquial",
+        "type": "register"
+      }
+    ],
+    "word": "random",
+    "attributionUrl": "http://creativecommons.org/licenses/by-sa/3.0/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "exampleUses": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  },
+  {
+    "partOfSpeech": "adjective",
+    "attributionText": "from WordNet 3.0 Copyright 2006 by Princeton University. All rights reserved.",
+    "sourceDictionary": "wordnet",
+    "text": "lacking any definite plan or order or purpose; governed by or depending on chance",
+    "word": "random",
+    "exampleUses": [
+      {
+        "text": "bombs fell at random",
+        "position": 0
+      },
+      {
+        "text": "random movements",
+        "position": 0
+      }
+    ],
+    "attributionUrl": "https://wordnet.princeton.edu/",
+    "wordnikUrl": "https://www.wordnik.com/words/random",
+    "citations": [],
+    "labels": [],
+    "notes": [],
+    "relatedWords": [],
+    "textProns": []
+  }
+]
