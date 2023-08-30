@@ -45,6 +45,8 @@ interface FetchedWord {
 const WORDNIK_API_KEY: string = "uoqnv60vosqot1gurgcgln5e31u3qfaq8qfczhlplgg8g9v3h";
 const INIT: string = "Random"
 
+const GUESSES_TO_SAVE: number = 2
+const MIN_LENGTH: number = 5;
 const MAX_ATTEMPTS: number = 10;
 const MAX_DORDLE_LENGTH: number = 8;
 const STRING_PLACEHOLDER: string = "[BLANK]"
@@ -928,11 +930,13 @@ async function wordnikValid(word: string, games?: Wordle[]): Promise<boolean> {
  * @param minLength allows specification of a minimum word length, if undefined uses the constant MIN_LENGTH*/
 async function wordnikRandom(dordle?: boolean, maxLength?: number, minLength?:number): Promise<string | null> {
     const maxlength = maxLength !== undefined ? maxLength : -1
-    const minlength = minLength !==undefined? minLength: -1
-    const request = dordle ? "https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minLength=" + minlength + "&maxLength=" + MAX_DORDLE_LENGTH + "&api_key=" + WORDNIK_API_KEY :
-        "https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minLength=" + minlength + "&maxLength=" + maxlength + "&api_key=" + WORDNIK_API_KEY
+    const minlength = minLength !==undefined? minLength: MIN_LENGTH
+    const request: string = dordle&&maxLength===undefined?"https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minLength=" + minlength + "&maxLength=" + MAX_DORDLE_LENGTH + "&api_key=" + WORDNIK_API_KEY:
+        "https://api.wordnik.com/v4/words.json/randomWord?hasDictionaryDef=true&minLength=" + minlength + "&maxLength=" + maxlength + "&api_key=" + WORDNIK_API_KEY;
+
     const response = await fetch(request)
     const data = await response.json()
+    console.log(request)
     if (data.message != undefined) {
         console.warn("API rate exceeded!")
         return null
@@ -944,7 +948,7 @@ async function wordnikRandom(dordle?: boolean, maxLength?: number, minLength?:nu
         if (data.word.length === reg.lastIndex) {//word does not contain invalid characters
             return data.word.toUpperCase()
         } else {//retry with a different word
-            return wordnikRandom()
+            return wordnikRandom(dordle,maxLength,minLength)
         }
     } else {
         return null
@@ -1131,11 +1135,11 @@ function updateDate() {
 
 }
 
-//TODO Dordle: eternal edition (2 pts) fix todos
+//TODO Dordle: eternal edition (2 pts)
 //This does not use additional APIs, but should be fun.
 //This is a new game playing mode, that starts like Dordle.
 //When a word in a dordle is completed, it is replaced by a new random word.
-//The user picks three of the existing guesses of the replaced word to "keep".
+//TODO The user picks three of the existing guesses of the replaced word to "keep".
 //The game resumes with the two remaining words. The game continues in this fashion until it is lost.
 //The goal is to play for as long as possible.
 
@@ -1156,7 +1160,6 @@ const EternalSettings = ({onStart, wordleDetails,setEternalStatus}:{onStart:Mult
     )
 }
 
-//TODO the length of the random answers is not always consistent (therefore making the game impossible to win)
 const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setEternalStatus}:{
     onBack: MultiWordleCallback,
     wordDetails: FetchedWord[],
@@ -1171,19 +1174,22 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
     const [gameLength, setGameLength] = useState<number>(games[0].answer.length);
 
     useEffect(()=>{
+        console.log("Saved guesses:" +guessesToKeep.toString())
+    },[guessesToKeep])
+
+    useEffect(()=>{
         if(games.find(game=> status(game)==="win")!==undefined){
             setGameLength(findGameNotDone().answer.length)
-            dordleNextWord()
-        }
-        if(multiStatus(games)==="lost"){
-            setEternalStatus(3)//game entierly lost, get back to main screen
-        }
-        if(multiStatus(games)==="next"){
+            console.log("Need to replace a word!")
+            setEternalStatus(2)//show the guess-keeping screen
+        } else if(multiStatus(games)==="lost"){
+            setEternalStatus(3)//game entirely lost, get back to main screen
+        } else if(multiStatus(games)==="next"){
+            console.log("Game can continue!")
             setEternalStatus(1)//game is ready to continue
         }
+        console.log("Games have been updated!")
     },[games])
-
-    const GUESSES_TO_SAVE = 3
 
     let gameCount = 0;
     /*DONE Fix the ArrayOutOfBound Exception
@@ -1305,7 +1311,8 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
         gameCount++;
 
         //if the number of guesses is leq than 3, there is no need for the user to choose the guesses to keep (all are kept)
-        if(gameNotDone.guesses.length<=3){
+        if(gameNotDone.guesses.length<=GUESSES_TO_SAVE){
+            console.log("Guess count is "+gameNotDone.guesses.length)
             setGuessesToKeep(gameNotDone.guesses)
             dordleNextWord()
         }
@@ -1334,8 +1341,10 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
                 <Text style={styles.keyText}>Select which guess to save</Text>
                 <View style={styles.row}>
                     {
-                        indexes.map(cell => <Pressable style={[styles.boardCell, isSelected(cell.isSelected)]} onPress={() => cellPressed(cell)} key={"selector_cell_"+cell_count++}>
-                            <Text style={styles.keyText} >{cell.index}</Text></Pressable>)
+                        indexes.map(cell =>
+                            <Pressable style={[styles.boardCell, isSelected(cell.isSelected)]} onPress={() => cellPressed(cell)} key={"selector_cell_"+cell_count++}>
+                                <Text style={styles.keyText} >{cell.index}</Text>
+                            </Pressable>)
                     }
                 </View>
                 <Button title={"Save Guesses"} onPress={()=> saveGuessesToKeep(indexes.filter(cell=> cell.isSelected).map(cell=> cell.index))}/>
@@ -1352,12 +1361,12 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
                 savedGuesses.push(guess)
             }
         })
-        if(savedGuesses.length===GUESSES_TO_SAVE||savedGuesses.length===gameNotLost.guesses.length){
-            //either max number of guesses is chosen or max number of guesses available is chosen
+        if(savedGuesses.length===GUESSES_TO_SAVE){
             setGuessesToKeep(savedGuesses)
             setGames(games)
         } else {
-            console.log("Too Few Guesses selected!")
+            console.log("Too Few Guesses selected!\nYou selected "+savedGuesses.length+
+                " while you must select at least "+GUESSES_TO_SAVE)
         }
     }
 
@@ -1400,7 +1409,12 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
 //TODO Checks whether there are examples available and if it is the last turn of the game
 //TODO condition gets updated only upon clicking the clue button?
 function disableDesperateClue(games: Wordle[], details: FetchedWord[]): boolean {
-    const exampleAvailable = (details[0].example!=null||details[0].example!=undefined)&&(details[1].example!=null||details[1].example!=undefined)
+    let exampleAvailable = false;
+    if(details!=undefined){
+        if(details[0]!=undefined&&details[1]!=undefined){
+            exampleAvailable = details[0].example != undefined && details[1] != undefined;
+        }
+    }
     const isLastTurn = games[0].guesses.length == games[0].maxGuesses&&games[1].guesses.length == games[1].maxGuesses
     return !exampleAvailable && !isLastTurn;
 }
