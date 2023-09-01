@@ -1327,17 +1327,9 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
     const selectGuessesToKeep =()=> {
         gameCount++;
 
-        console.log(cellSelectors.toString())
+        console.log(JSON.stringify(cellSelectors))
 
         console.log("Cell selectors updated")
-
-        const isSelected = (cell: SelectorCell) => {
-            if( cell.isSelected){
-                return  styles.absent
-            } else {
-                return styles.untried
-            }
-        }
 
         const cellPressed =(cell: SelectorCell) => {
             let selectedCell = cell
@@ -1352,28 +1344,35 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
             updateCellSelectors(selectors)
         }
 
-        function saveGuessesToKeep(savedGuesses: string[]){
+        function saveGuessesToKeep(){
+            console.log("Filtered selectors: "+JSON.stringify(cellSelectors.filter(selector=> selector.isSelected)))
+
+
+            const savedGuesses = cellSelectors.filter(selector=> selector.isSelected).map(selector=> selector.guess)
+
             if(savedGuesses.length===GUESSES_TO_SAVE){
                 setGuessesToKeep(savedGuesses)
             } else {
                 console.log("Too Few Guesses selected!\nYou selected "+savedGuesses.length+
                     " while you must select at least "+GUESSES_TO_SAVE)
+                console.log(savedGuesses.toString())
             }
         }
 
         let cell_count = 0;
+        //TODO selector cell backgrounds get updated only on pressing the saveGuess button
         return(
             <Card style={styles.card}>
                 <Text style={styles.keyText}>Select which guess to keep</Text>
                 <View style={[styles.column,{alignItems:"center"}]}>
                     {
                         cellSelectors.map(cell =>
-                            <Pressable style={[isSelected(cell),styles.selectorCell]} onPress={() => cellPressed(cell)} key={"selector_cell_"+cell_count++}>
+                            <Pressable style={[cell.isSelected?styles.absent:styles.untried,styles.selectorCell]} onPress={() => cellPressed(cell)} key={"selector_cell_"+cell_count++}>
                                 <Text style={styles.keyText} >{cell.guess}</Text>
                             </Pressable>)
                     }
                 </View>
-                <Button title={"Save Guesses"} onPress={()=> saveGuessesToKeep(cellSelectors.filter(cell=> cell.isSelected).map(cell=> cell.guess))}/>
+                <Button title={"Save Guesses"} onPress={()=> saveGuessesToKeep()}/>
             </Card>
         )
     }
