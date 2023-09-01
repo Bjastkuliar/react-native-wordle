@@ -3,7 +3,7 @@
 // status for a guess: correct (green), misplaced (yellow), absent (red)
 // also including the letters that were not tried
 // (for the keyboard)
-export type Guess = "correct"|"misplaced"|"absent"|"untried"
+export type Guess = "correct"|"misplaced"|"absent"|"untried"|"blank"
 
 // a single letter, that keeps its index
 export interface Letter {
@@ -28,7 +28,36 @@ export interface LetterGuess {
 interface GuessData {
   result: LetterGuess[];
   guessLeft: Letter[];
-  wordLeft: Letter[];
+  answerLeft: Letter[];
+}
+
+const blankFiller = (remaining: number):LetterGuess[]=>{
+  if(remaining==0){
+    const BlankLetter: Letter = {
+      character: " ",
+      index: 0
+    }
+    const BlankGuess: LetterGuess = {
+      letter:BlankLetter,
+      kind: "blank"
+    }
+    return [BlankGuess]
+  } else {
+    let leftBlank = blankFiller(remaining-1)
+    leftBlank.every(blankGuess => {
+      blankGuess.letter.index++
+    })
+    const BlankLetter: Letter = {
+      character: " ",
+      index: remaining
+    }
+    const BlankGuess: LetterGuess = {
+      letter:BlankLetter,
+      kind: "blank"
+    }
+    return [BlankGuess,...leftBlank]
+
+  }
 }
 
 // a function to convert a string into a word
@@ -40,15 +69,16 @@ export const stringToWord = (str: string): Word => {
 // the function that finds the "green" letters in the guess
 // and "removes" them from the set of letters to consider further
 const corrects = (guess: Word, answer: Word): GuessData => {
-  if (guess.length === 0) return {result: [], guessLeft: [], wordLeft: []}
+  if(guess.length === 0 && answer.length!=0)return {result:blankFiller(answer.length-1),guessLeft:[],answerLeft:[]}
+  if (guess.length === 0) return {result: [], guessLeft: [], answerLeft: []}
   const [currGuess, ...guesses] = guess
   const [currAnswer, ...answers] = answer
-  const {result, guessLeft, wordLeft} = corrects(guesses, answers)
+  const {result, guessLeft, answerLeft} = corrects(guesses, answers)
   if (currGuess.character === currAnswer.character) {
     const correct: LetterGuess = {letter: currGuess, kind: "correct"}
-    return {result: [correct, ...result], guessLeft, wordLeft}
+    return {result: [correct, ...result], guessLeft, answerLeft: answerLeft}
   }
-  return {result, guessLeft: [currGuess, ...guessLeft], wordLeft: [currAnswer, ...wordLeft]}
+  return {result, guessLeft: [currGuess, ...guessLeft], answerLeft: [currAnswer, ...answerLeft]}
 }
 
 
@@ -68,23 +98,28 @@ const hasLetter = (letter: Letter, [first, ...rest]: Letter[]): [boolean, Letter
 // this function works a bit like "corrects", but it only goes through one list at a time
 // because it uses the "hasLetter" function to go through the second list
 const misplaced = (guess: Word, answer: Word): GuessData => {
-  if (guess.length === 0) return {result: [], guessLeft: [], wordLeft: answer}
+  if (guess.length === 0) return {result: [], guessLeft: [], answerLeft: answer}
   const [currGuess, ...guesses] = guess
-  const [letterFound, answerLeft] = hasLetter(currGuess, answer)
-  const {result, guessLeft, wordLeft} = misplaced(guesses, answerLeft)
+  const [letterFound, remainingAnswer] = hasLetter(currGuess, answer)
+  const {result, guessLeft, answerLeft} = misplaced(guesses, remainingAnswer)
   if (letterFound) {
     const misplacedLetter: LetterGuess = {letter: currGuess, kind: "misplaced"}
-    return {result: [misplacedLetter, ...result], guessLeft, wordLeft}
+    return {result: [misplacedLetter, ...result], guessLeft, answerLeft: answerLeft}
   } 
-  return {result, guessLeft: [currGuess, ...guessLeft], wordLeft: wordLeft}
+  return {result, guessLeft: [currGuess, ...guessLeft], answerLeft: answerLeft}
 }
 
 // this function brings all the pieces together, and finds the green, yellow, and red letters
 export const rateGuesses = (guess: string, answer: string): LetterGuess[] => {
-  const {result, guessLeft, wordLeft} = corrects(stringToWord(guess), stringToWord(answer))
-  const secondResult = misplaced(guessLeft, wordLeft)
-  const incorrects: LetterGuess[] = secondResult.guessLeft.map(letter => ({letter, kind: "absent" }))
-  return [...result, ...secondResult.result, ...incorrects].sort((a, b) => a.letter.index - b.letter.index)
+  const {result, guessLeft, answerLeft} = corrects(stringToWord(guess), stringToWord(answer),)
+  result.forEach(maybeBlank=>{
+    if(maybeBlank.kind=="blank"){
+      maybeBlank.letter.index+=answer.length
+    }
+  })
+  const secondResult = misplaced(guessLeft, answerLeft)
+  const incorrect: LetterGuess[] = secondResult.guessLeft.map(letter => ({letter, kind: "absent" }))
+  return [...result, ...secondResult.result, ...incorrect].sort((a, b) => a.letter.index - b.letter.index)
 }
 
 // a simple test function for evalauting the guesses
@@ -113,9 +148,6 @@ export const bestGuesses = (letters: string, guesses: string[], answer: string):
   return stringToWord(letters).map(letter => bestGuessForLetter(letter, allGuesses)) 
 }
 
-// this section is concerned with "rendering" the data in textual format
-// not needed for react version
-
 // this is a type definition for the overall state of the game
 export interface Wordle {
   guesses: string[];
@@ -129,19 +161,15 @@ export interface Wordle {
 
 // here we have a few helper functions that create a board to render
 // that also contains "empty guesses"
-const emptyGuess: string = "     "
-const initializeGuesses = (n:number): string[] => n <= 0?[]:[emptyGuess, ...initializeGuesses(n - 1)]
-export const fillGuesses = (guesses: string[], n: number): string[] => [...guesses, ...initializeGuesses(n - guesses.length)]
-
-// then we can render the entire state of the game, in this function
-// not needed here
-
+const emptyGuess = (length:number) : string => Array(length+1).join(" ");
+const initializeGuesses = (n:number,guessLength:number): string[] => n <= 0?[]:[emptyGuess(guessLength), ...initializeGuesses(n - 1,guessLength)]
+export const fillGuesses = (guesses: string[], n: number,answerLength:number): string[] => [...guesses, ...initializeGuesses(n - guesses.length,answerLength)]
 
 // the higher-level game logic is here 
 
 export const isValid = (guess: string, words: string[]): boolean => words.find(w => w === guess) !== undefined
 
-// new function for the react native version
+// new function for the React native version
 export const isValidPrefix = (prefix: string, words: string[]): boolean => words.find(w => w.startsWith(prefix)) !== undefined
 
 // in hard mode, it is valid if it is "similar enough" to the previous guess
@@ -151,11 +179,6 @@ const isValidHard = (guess: string, previous: string, answer: string): boolean =
                             .map(g => g.letter.character)
   return previousChars.every(character => guess.includes(character))
 }
-
-// some tests for this
-console.assert(isValidHard("abcde","abcdf","abcde"))
-console.assert(!isValidHard("zxvab","abcdf","abczx"))
-console.assert(isValidHard("zcvab","abcdf","abczx"))
 
 // the function that tests if a guess is valid, taking into account the game mode
 export const isValidGuess = (guess: string, {mode, valid_words, answer, guesses}: Wordle) => {
@@ -170,15 +193,6 @@ export const isValidGuess = (guess: string, {mode, valid_words, answer, guesses}
   return true
 }
 
-// a basic help string
-// not needed here
-
-// a very basic statistics rendering
-// "7" means that the game was lost
-// an improved version would render this more clearly
-// this section deals with multiple turns of the game
-// mostly removed since not needed in RN version
-
 // a function to determine the status of the game 
 export const status = ({guesses, answer, maxGuesses}: Wordle): "win"|"lost"|"next" => {
   const last = guesses[guesses.length - 1]
@@ -186,16 +200,3 @@ export const status = ({guesses, answer, maxGuesses}: Wordle): "win"|"lost"|"nex
   if (guesses.length === maxGuesses) return "lost"
   return "next"
 }
-
-// a simple function to pick a word at random
-export const randomWord = (answers: string[]): string => {
-  const rand = Math.floor(Math.random() * answers.length)
-  return answers[rand]
-}
-
-// this is a function to start a new game
-// a function that processes the input
-// not needed here 
-
-// the main function takes care of input/output
-// not needed here
