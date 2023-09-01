@@ -20,7 +20,7 @@ import {
     stringToWord,
     Wordle
 } from './wordle';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Button, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View} from 'react-native';
 import Constants from 'expo-constants';
 import {Card} from 'react-native-paper';
@@ -322,21 +322,23 @@ const Settings = ({onStart, statistics, onWordsFetched, setStats, setWOTDStatus,
 }) => {
 
     const [words, setWords] = useState<string[]>([INIT]);
+    const[startGame, setStartGame] = useState(false)
+
+    useEffect(()=>{
+        if(startGame){
+            fetchRandomWords(words).then(games => {
+                const gameAnswers: string[] = games.map(wordle => wordle.answer)
+                console.log("Game answers: " + gameAnswers)
+                fetchWords(gameAnswers).then(fetchedWords => onWordsFetched(fetchedWords))
+                onStart(games)
+            })
+        }
+    },[startGame])
 
     const selectWord = (word: string, index: number) => {
         let newWords = [...words]
         newWords[index] = word
         setWords(newWords)
-    }
-
-    //Initialises the game(s) with one or more random answers
-    const startGame = () => {
-        fetchRandomWords(words).then(games => {
-            const gameAnswers: string[] = games.map(wordle => wordle.answer)
-            console.log("Game answers: " + gameAnswers)
-            fetchWords(gameAnswers).then(fetchedWords => onWordsFetched(fetchedWords))
-            onStart(games)
-        })
     }
 
     const addGame = () => setWords([...words, INIT])
@@ -352,7 +354,7 @@ const Settings = ({onStart, statistics, onWordsFetched, setStats, setWOTDStatus,
                                                             onSelect={selectWord} key={"game_" + index}/>)}
                 <Button title="Add game" onPress={addGame}/>
                 <Button title="Remove game" onPress={removeGame} disabled={words.length <= 1}/>
-                <Button title="Start" onPress={startGame}/>
+                <Button title="Start" onPress={()=> setStartGame(!startGame)}/>
                 <WordOfTheDay onStart={onStart} wordDetails={onWordsFetched} setWOTDStatus={setWOTDStatus}/>
                 <EternalSettings onStart={onStart} wordleDetails={onWordsFetched} setEternalStatus={setEternalStatus}/>
             </Card>
@@ -634,10 +636,10 @@ const App = () => {
     }
 
     function chooseWordleType (){
-        if(eternalStatus===0){
-            return (<MultiWordleGame startGames={games} onBack={getStats} wordDetails={fetchedWords} specialStatus={challengeStatus}/>)
-        } else {
+        if(eternalStatus!==0&&games.length===2){
             return (<DordleEternalGame onBack={getStats} startGames={games} wordDetails={fetchedWords} eternalStatus={eternalStatus} setEternalStatus={setEternalStatus}/>)
+        } else {
+            return (<MultiWordleGame startGames={games} onBack={getStats} wordDetails={fetchedWords} specialStatus={challengeStatus}/>)
         }
     }
 
@@ -726,7 +728,7 @@ async function fetchWords(gameAnswers: string[]): Promise<FetchedWord[]> {
     gameAnswers.forEach(answer => {
         fetchCompleteWord(answer).then(fetchedWord =>
             fetchedWords.push(fetchedWord)
-        )
+        ).catch(error=>console.log("Error while trying to fetch the details for the word "+answer+": "+error))
     })
     return fetchedWords;
 }
@@ -742,7 +744,6 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
         example: null
     }
     let definitionIndex = 0, score = 0, maxScore = 0, maxScoreIndex = 0;
-    console.log("Fetching word definition for " + theWord)
     const responseJson = await fetchWordData(theWord);
     while (responseJson[definitionIndex] != undefined) {
         score = 0;
@@ -769,6 +770,7 @@ async function fetchCompleteWord(theWord: string): Promise<FetchedWord> {
 
         definitionIndex++
     }
+    console.log("Chosen definition number "+ (maxScoreIndex+1) +": "+JSON.stringify(responseJson[maxScoreIndex]))
     //DONE parse out xml/html tags from text
     wordDetails.word = theWord;
     wordDetails.definition = responseJson[maxScoreIndex].text.replace("<(.*?)>", "");
@@ -1144,19 +1146,23 @@ function updateDate() {
 //The goal is to play for as long as possible.
 
 const EternalSettings = ({onStart, wordleDetails,setEternalStatus}:{onStart:MultiWordleCallback,wordleDetails: React.Dispatch<React.SetStateAction<FetchedWord[]>>, setEternalStatus: React.Dispatch<React.SetStateAction<number>>}) => {
-    const startEternal = () => {
-        fetchRandomWords([INIT, INIT]).then(wordles => {
-            fetchWords([wordles[0].answer,wordles[1].answer]).then(fetchedWords => {
-                wordleDetails(fetchedWords)
-                setEternalStatus(1)
-                onStart(wordles)
-            })
-        }).catch(e=>console.log(e));
 
-    }
+    const[trigger, setTrigger] = useState(false)
+
+    useEffect(()=>{
+        if(trigger){
+            fetchRandomWords([INIT, INIT]).then(wordles => {
+                fetchWords([wordles[0].answer,wordles[1].answer]).then(fetchedWords => {
+                    wordleDetails(fetchedWords)
+                    setEternalStatus(1)
+                    onStart(wordles)
+                })
+            }).catch(e=>console.log(e));
+        }
+    },[trigger])
 
     return (
-        <Button title={"Dordle Eternal"} onPress={startEternal}/>
+        <Button title={"Dordle Eternal"} onPress={()=> setTrigger(!trigger)}/>
     )
 }
 
@@ -1166,30 +1172,75 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
     startGames: Wordle[],
     eternalStatus: number,
     setEternalStatus: React.Dispatch<React.SetStateAction<number>>}) =>{
+
+    interface SelectorCell {
+        guess: string,
+        isSelected: boolean
+    }
+
+    const [cellSelectors, updateCellSelectors] = useState<SelectorCell[]>([])
     const [guess, setGuess] = useState<string>("");
     const [games, setGames] = useState<Wordle[]>(startGames);
     const [msgBox, updateMessage] = useState<string>("");
     const [details, setDetails] = useState<FetchedWord[]>(wordDetails);
     const [guessesToKeep, setGuessesToKeep] = useState<string[]>([]);
-    const [gameLength, setGameLength] = useState<number>(games[0].answer.length);
+    const gameLength = games[0].answer.length
 
     useEffect(()=>{
-        console.log("Saved guesses:" +guessesToKeep.toString())
-    },[guessesToKeep])
-
-    useEffect(()=>{
+        const gameNotDone = findGameNotDone()
         if(games.find(game=> status(game)==="win")!==undefined){
-            setGameLength(findGameNotDone().answer.length)
-            console.log("Need to replace a word!")
-            setEternalStatus(2)//show the guess-keeping screen
+            //if the number of guesses is leq than 3, there is no need for the user to choose the guesses to keep (all are kept)
+            if(gameNotDone.guesses.length<=GUESSES_TO_SAVE){
+                setGuessesToKeep(gameNotDone.guesses)//handles the game-updating without redrawing the screen
+            } else {
+                updateCellSelectors(findGameNotDone().guesses.map(guess=> {
+                    return ({
+                        guess: guess,
+                        isSelected: false
+                    })
+                }))
+                console.log("Need user to choose guesses to keep!")
+                setEternalStatus(2)//show the guess-keeping screen
+            }
         } else if(multiStatus(games)==="lost"){
             setEternalStatus(3)//game entirely lost, get back to main screen
         } else if(multiStatus(games)==="next"){
-            console.log("Game can continue!")
             setEternalStatus(1)//game is ready to continue
         }
-        console.log("Games have been updated!")
     },[games])
+
+    useEffect(()=>{
+        //once the game needs a new word and there are guesses selected, we then fetch the new word
+        if(guessesToKeep.length!=0){
+            console.log("Replacing a word!")
+            wordnikRandom(true, gameLength, gameLength).then(word=>{
+                if(word != null){
+                    let newGame: Wordle = {
+                        answer: word,
+                        maxGuesses: maxAttempts(word),
+                        valid_words: [],
+                        guesses: guessesToKeep,
+                        words: [],
+                        mode: "easy",
+                        statistics: []
+                    }
+                    console.log("Dordle Eternal new random word: "+word)
+                    fetchCompleteWord(word).then(wordDetails=>{
+                        if(status(games[0])==="win"){ //replace first word
+                            games[1].guesses=guessesToKeep
+                            setGames([newGame,games[1]])
+                            setDetails([wordDetails,details[1]])
+                        } else { //replace second word
+                            games[0].guesses=guessesToKeep
+                            setGames([games[0],newGame])
+                            setDetails([details[0],wordDetails])
+                        }
+                    }).catch(e=>console.log("Error while trying to fetch the random word details in Dordle Eternal! "+e))
+                }
+            }).catch(e=>console.log("Error while trying to fetch the next random word in Dordle Eternal! "+e))
+            setGuessesToKeep([])
+        }
+    },[guessesToKeep])
 
     let gameCount = 0;
     /*DONE Fix the ArrayOutOfBound Exception
@@ -1213,31 +1264,6 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
             console.log("User tried to enter one more character!")
         }
     }, backspace = () => setGuess(guess.slice(0, -1));
-
-    function dordleNextWord(){
-        wordnikRandom(true, gameLength, gameLength).then(word=>{
-            if(word != null){
-                let newGame: Wordle = {
-                    answer: word,
-                    maxGuesses: maxAttempts(word),
-                    valid_words: [],
-                    guesses: guessesToKeep,
-                    words: [],
-                    mode: "easy",
-                    statistics: []
-                }
-                fetchCompleteWord(word).then(wordDetails=>{
-                    if(status(games[0])==="win"){ //replace first word
-                        setGames([newGame,games[1]])
-                        setDetails([wordDetails,details[1]])
-                    } else { //replace second word
-                        setGames([games[0],newGame])
-                        setDetails([details[0],wordDetails])
-                    }
-                }).catch(e=>console.log("Error while trying to fetch the random word details in Dordle Eternal! "+e))
-            }
-        }).catch(e=>console.log("Error while trying to fetch the next random word in Dordle Eternal! "+e))
-    }
 
     const message = () => {
         let msg_to_display = ""
@@ -1298,81 +1324,62 @@ const DordleEternalGame = ({onBack, wordDetails, startGames, eternalStatus, setE
         }
     }
 
-    const isSelected = (value: boolean) => {
-        if( value){
-            return  styles.correct
-        } else {
-            return styles.untried
-        }
-    }
-
-    const selectGuessesToKeep = () => {
-        const gameNotDone = findGameNotDone()
+    const selectGuessesToKeep =()=> {
         gameCount++;
 
-        //if the number of guesses is leq than 3, there is no need for the user to choose the guesses to keep (all are kept)
-        if(gameNotDone.guesses.length<=GUESSES_TO_SAVE){
-            console.log("Guess count is "+gameNotDone.guesses.length)
-            setGuessesToKeep(gameNotDone.guesses)
-            dordleNextWord()
-        }
+        console.log(cellSelectors.toString())
 
-        interface SelectorCell {
-            index: number,
-            isSelected: boolean
-        }
-        const indexes: SelectorCell[] = Array(gameNotDone.guesses.length)
-        for(let i = 0; i<indexes.length;i++){
-            indexes[i] = {
-                index : i,
-                isSelected : false
+        console.log("Cell selectors updated")
+
+        const isSelected = (cell: SelectorCell) => {
+            if( cell.isSelected){
+                return  styles.absent
+            } else {
+                return styles.untried
             }
         }
 
         const cellPressed =(cell: SelectorCell) => {
-            console.log("Pressed selector number: "+cell.index)
-            cell.isSelected = !cell.isSelected;
+            let selectedCell = cell
+            selectedCell.isSelected = !selectedCell.isSelected;
+
+            const selectors = cellSelectors
+            selectors.forEach(selCell=>{
+                if(selCell.guess === selectedCell.guess){
+                    selCell = selectedCell
+                }
+            })
+            updateCellSelectors(selectors)
+        }
+
+        function saveGuessesToKeep(savedGuesses: string[]){
+            if(savedGuesses.length===GUESSES_TO_SAVE){
+                setGuessesToKeep(savedGuesses)
+            } else {
+                console.log("Too Few Guesses selected!\nYou selected "+savedGuesses.length+
+                    " while you must select at least "+GUESSES_TO_SAVE)
+            }
         }
 
         let cell_count = 0;
         return(
-            <View style={{flex:10}}>
-                <Board game={gameNotDone} guess={guess}/>
-                <Text style={styles.keyText}>Select which guess to save</Text>
-                <View style={styles.row}>
+            <Card style={styles.card}>
+                <Text style={styles.keyText}>Select which guess to keep</Text>
+                <View style={[styles.column,{alignItems:"center"}]}>
                     {
-                        indexes.map(cell =>
-                            <Pressable style={[styles.boardCell, isSelected(cell.isSelected)]} onPress={() => cellPressed(cell)} key={"selector_cell_"+cell_count++}>
-                                <Text style={styles.keyText} >{cell.index}</Text>
+                        cellSelectors.map(cell =>
+                            <Pressable style={[isSelected(cell),styles.selectorCell]} onPress={() => cellPressed(cell)} key={"selector_cell_"+cell_count++}>
+                                <Text style={styles.keyText} >{cell.guess}</Text>
                             </Pressable>)
                     }
                 </View>
-                <Button title={"Save Guesses"} onPress={()=> saveGuessesToKeep(indexes.filter(cell=> cell.isSelected).map(cell=> cell.index))}/>
-            </View>
+                <Button title={"Save Guesses"} onPress={()=> saveGuessesToKeep(cellSelectors.filter(cell=> cell.isSelected).map(cell=> cell.guess))}/>
+            </Card>
         )
     }
-
-    function saveGuessesToKeep(indexes: number[]){
-        const gameNotLost = findGameNotDone()
-        let savedGuesses: string[] = []
-        indexes.forEach(idx=> {
-            const guess = gameNotLost.guesses.at(idx)
-            if(guess!== undefined){
-                savedGuesses.push(guess)
-            }
-        })
-        if(savedGuesses.length===GUESSES_TO_SAVE){
-            setGuessesToKeep(savedGuesses)
-            setGames(games)
-        } else {
-            console.log("Too Few Guesses selected!\nYou selected "+savedGuesses.length+
-                " while you must select at least "+GUESSES_TO_SAVE)
-        }
-    }
-
     return (
         <View style={styles.container}>
-            <Text style={styles.paragraph}>{gameName(games)}</Text>
+            <Text style={styles.paragraph}>Dordle Eternal</Text>
             <Text style={styles.paragraph}>{message()}</Text>
             {eternalStatus==2?
                 selectGuessesToKeep():
@@ -1456,6 +1463,15 @@ const styles = StyleSheet.create({
         height: 25,
         justifyContent: "center",
     },
+    selectorCell: {
+        borderColor: "black",
+        borderWidth: 1,
+        margin: 2,
+        width:"80%",
+        height: 25,
+        alignItems:"center",
+        justifyContent: "center"
+    },
     key: {
         flex: 1,
         borderColor: "black",
@@ -1463,7 +1479,7 @@ const styles = StyleSheet.create({
         margin: 2,
         width: 30,
         height: 40,
-        justifyContent: "center",
+        justifyContent: "center"
     },
     keyText: {
         fontSize: 18,
